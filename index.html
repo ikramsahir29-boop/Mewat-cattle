@@ -256,7 +256,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 // ── Supabase Sync Config ──────────────────────────────────────────────────
 const SB_URL = 'https://khgkzaucytawsowanutp.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoZ2t6YXVjeXRhd3Nvd2FudXRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDY0MTcsImV4cCI6MjA5NjU4MjQxN30.xwPxNjzHdZSkFigwWNFcNICmVz8ZLSvNhBv0aCw3EAc';
-const TBL = 'cattle%20data';
+const TBL = 'cattle_data';
 
 let animals = [];
 let batches = [];
@@ -279,17 +279,33 @@ async function sbGet(key){
 
 async function sbSet(key, value){
   try{
-    const r = await fetch(`${SB_URL}/rest/v1/${TBL}`, {
-      method: 'POST',
+    // First try to update existing row
+    const rUp = await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${key}`, {
+      method: 'PATCH',
       headers: {
         'apikey': SB_KEY,
         'Authorization': 'Bearer ' + SB_KEY,
         'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
+        'Prefer': 'return=minimal'
       },
-      body: JSON.stringify({key, value})
+      body: JSON.stringify({value})
     });
-    if(!r.ok){ console.error('sbSet error:', r.status, await r.text()); }
+    // Check if any row was updated
+    const count = rUp.headers.get('content-range');
+    if(count === '*/0' || !count){
+      // No row exists, insert new
+      const rIn = await fetch(`${SB_URL}/rest/v1/${TBL}`, {
+        method: 'POST',
+        headers: {
+          'apikey': SB_KEY,
+          'Authorization': 'Bearer ' + SB_KEY,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({key, value})
+      });
+      if(!rIn.ok){ console.error('sbSet insert error:', rIn.status, await rIn.text()); }
+    }
   }catch(e){ console.error('sbSet catch:', e); }
 }
 
@@ -333,10 +349,14 @@ function sv(){
       showSyncBar('💾 Saved locally — will sync when online', '#FFF3E0', '#E65100', true);
       return;
     }
-    await Promise.all([sbSet('animals', aStr), sbSet('batches', bStr)]);
+    try{
+      await Promise.all([sbSet('animals', aStr), sbSet('batches', bStr)]);
+      showSyncBar('✅ Saved & Synced', '#E8F5E9', '#2E7D32', true);
+    }catch(e){
+      showSyncBar('⚠️ Cloud save failed — saved locally', '#FFEBEE', '#C62828', true);
+    }
     _saveTimer = null;
     _cloudSaving = false;
-    showSyncBar('✅ Saved & Synced', '#E8F5E9', '#2E7D32', true);
   }, 300);
 }
 
