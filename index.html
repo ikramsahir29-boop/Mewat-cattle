@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Mewat Cattle Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --green:#1D9E75;--green-dark:#0F6E56;--green-light:#E1F5EE;--green-text:#085041;
+  --red:#C62828;--red-light:#FFEBEE;
+  --amber:#E65100;--amber-light:#FFF8E1;
+  --blue:#1565C0;--blue-light:#E3F2FD;
+  --purple:#4527A0;--purple-light:#EDE7F6;
+  --bg:#F0F4F8;--surface:#FFFFFF;--border:#D0D8E4;--border2:#B0BEC5;
+  --text:#263238;--text2:#546E7A;--text3:#90A4AE;
+  --radius:10px;--radius-lg:14px;
+  --shadow:0 2px 8px rgba(0,0,0,0.08),0 0 0 1px rgba(0,0,0,0.04);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0F4F8;color:#263238;font-size:15px;line-height:1.5;min-height:100vh}
+.app{max-width:900px;margin:0 auto;padding:0 0 80px}
+.header{background:linear-gradient(135deg,#0F6E56,#1D9E75);border-bottom:none;padding:14px 16px;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 8px rgba(15,110,86,0.25)}
+.header-left h1{font-size:17px;font-weight:700;color:#fff}
+.header-left p{font-size:12px;color:rgba(255,255,255,0.8);margin-top:1px}
+.page{display:none;padding:12px 16px}.page.active{display:block}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid #E8F5E9;display:flex;z-index:50;box-shadow:0 -2px 10px rgba(0,0,0,0.08)}
+.nav-item{flex:1;padding:10px 4px 12px;text-align:center;cursor:pointer;border:none;background:none;color:#90A4AE;font-size:10px;font-weight:600;transition:color 0.15s;display:flex;flex-direction:column;align-items:center;gap:3px}
+.nav-item svg{width:22px;height:22px;stroke-width:1.8}
+.nav-item.active{color:#0F6E56}
+.nav-item .nav-dot{width:4px;height:4px;border-radius:50%;background:#0F6E56;margin:0 auto;display:none}
+.nav-item.active .nav-dot{display:block}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+@media(min-width:600px){.metrics{grid-template-columns:repeat(7,1fr)}}
+.metric{background:#fff;border-radius:var(--radius);padding:12px 10px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.07)}
+.metric-label{font-size:11px;color:#546E7A;margin-bottom:4px;line-height:1.3;font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
+.metric-value{font-size:18px;font-weight:700}
+@media(min-width:480px){.metric-value{font-size:15px}}
+.metric-value.green{color:#0F6E56}.metric-value.red{color:#C62828}.metric-value.amber{color:#E65100}.metric-value.purple{color:#4527A0}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--radius);border:1px solid #CFD8DC;background:#fff;color:#37474F;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;white-space:nowrap;text-decoration:none}
+.btn:hover{background:#F5F7FA}.btn:active{transform:scale(0.97)}
+.btn-primary{background:linear-gradient(135deg,#1D9E75,#0F6E56);color:#fff;border-color:#0F6E56;box-shadow:0 2px 6px rgba(15,110,86,0.3)}
+.btn-primary:hover{background:linear-gradient(135deg,#0F6E56,#085041)}
+.btn-sm{padding:6px 12px;font-size:13px;border-radius:8px}
+.btn-danger{color:#C62828;border-color:transparent;background:none}.btn-danger:hover{background:#FFEBEE}
+.btn-full{width:100%;justify-content:center;padding:13px}
+.btn-icon{padding:7px;border-radius:8px;border:1px solid #E0E7EF;background:#fff;cursor:pointer}
+.btn-ghost{padding:5px 10px;border-radius:7px;border:1px solid transparent;background:none;color:#546E7A;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
+.btn-ghost:hover{background:#F5F7FA;border-color:#CFD8DC}
+.fab{position:fixed;bottom:72px;right:16px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1D9E75,#0F6E56);color:#fff;border:none;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(15,110,86,0.45);z-index:40;transition:transform 0.15s}
+.fab:active{transform:scale(0.93)}
+@media(min-width:600px){.fab{display:none}}
+.card{background:#fff;border-radius:var(--radius-lg);border:1px solid #E0E7EF;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.card-title{font-size:12px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px}
+.animal-item{background:#fff;border-radius:var(--radius-lg);border:1px solid #E0E7EF;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);cursor:pointer;transition:all 0.15s}
+.animal-item:hover{border-color:#1D9E75;box-shadow:0 4px 12px rgba(29,158,117,0.15);transform:translateY(-1px)}
+.animal-name{font-size:16px;font-weight:700;color:#1A237E}
+.animal-breed{font-size:12px;color:#546E7A;margin-top:1px;font-weight:500}
+.animal-item-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid #E0E7EF}
+.profit-pos{color:#0F6E56;font-weight:700}.profit-neg{color:#C62828;font-weight:700}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700}
+.badge-active{background:linear-gradient(135deg,#E8F5E9,#C8E6C9);color:#1B5E20;border:1px solid #A5D6A7}
+.badge-sold{background:linear-gradient(135deg,#ECEFF1,#CFD8DC);color:#455A64;border:1px solid #B0BEC5}
+.badge-fast{background:#E8F5E9;color:#1B5E20}
+.badge-slow{background:#FFEBEE;color:#C62828}
+.badge-mid{background:#FFF8E1;color:#E65100}
+.action-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.form-group{margin-bottom:12px}
+.form-group label{display:block;font-size:13px;color:#37474F;margin-bottom:5px;font-weight:700;letter-spacing:0.02em}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:10px 12px;border-radius:var(--radius);border:1.5px solid #CFD8DC;background:#FAFBFC;color:#263238;font-size:15px;font-family:inherit;appearance:none;-webkit-appearance:none}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,117,0.18);background:#fff}
+.form-group textarea{resize:vertical;min-height:70px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.inline-input{padding:6px 10px;border-radius:8px;border:1px solid #CFD8DC;background:#fff;color:#263238;font-size:15px;font-weight:600;font-family:inherit;width:120px}
+.inline-input:focus{outline:none;border-color:#1D9E75;box-shadow:0 0 0 3px rgba(29,158,117,0.15)}
+.exp-table{width:100%;font-size:13px;border-collapse:collapse}
+.exp-table th{font-size:11px;font-weight:700;color:#546E7A;text-align:left;padding:6px 0;border-bottom:1px solid #E0E7EF;text-transform:uppercase;letter-spacing:0.04em}
+.exp-table td{padding:9px 0;border-bottom:1px solid #E0E7EF;vertical-align:middle}
+.exp-table tr:last-child td{border-bottom:none}
+.exp-table input,.exp-table select{padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;color:#263238;font-size:13px;font-family:inherit;width:100%}
+.summary-box{background:#F8FFFE;border-radius:var(--radius);padding:12px 14px;border:1px solid #B2DFDB}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:14px;color:#263238}
+.summary-row.total{border-top:1px solid #B2DFDB;margin-top:4px;padding-top:8px;font-weight:700;font-size:15px}
+.summary-row.profit-row{font-size:16px;font-weight:700;padding-top:6px}
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:flex-end;justify-content:center}
+.sheet-overlay.open{display:flex}
+@media(min-width:600px){.sheet-overlay{align-items:center}}
+.sheet{background:#fff;width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:0;max-height:92vh;overflow-y:auto;animation:slideUp 0.25s ease}
+@media(min-width:600px){.sheet{border-radius:var(--radius-lg);max-height:85vh}}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.sheet-handle{width:36px;height:4px;background:#CFD8DC;border-radius:2px;margin:12px auto 0}
+.sheet-header{padding:16px 20px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #E8F5E9;position:sticky;top:0;background:#fff;z-index:2}
+.sheet-title{font-size:17px;font-weight:700;color:#1A237E}
+.sheet-body{padding:16px 20px 24px}
+.detail-header{padding:16px;background:linear-gradient(135deg,#0F6E56,#1D9E75);border-bottom:none;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(15,110,86,0.2)}
+.detail-title{font-size:18px;font-weight:700;color:#fff}
+.detail-subtitle{font-size:13px;color:rgba(255,255,255,0.85);margin-top:1px}
+.detail-back{padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);cursor:pointer;color:#fff}
+.progress-wrap{margin-bottom:10px}
+.progress-info{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.progress-bar{height:10px;background:#ECEFF1;border-radius:5px;overflow:hidden;border:1px solid #CFD8DC}
+.progress-fill{height:100%;border-radius:5px;transition:width 0.4s ease}
+.tabs{display:flex;gap:4px;background:#E8F5E9;border-radius:var(--radius);padding:3px;margin-bottom:14px}
+.tab-btn{flex:1;padding:7px;border:none;background:none;border-radius:8px;font-size:13px;font-weight:600;color:#90A4AE;cursor:pointer;transition:all 0.15s;text-align:center}
+.tab-btn.active{background:#fff;color:#0F6E56;box-shadow:0 1px 4px rgba(0,0,0,0.1);font-weight:700}
+.empty{text-align:center;padding:40px 20px;color:#546E7A}
+.empty svg{width:48px;height:48px;stroke:#90A4AE;margin-bottom:12px}
+.empty h3{font-size:16px;font-weight:700;color:#263238;margin-bottom:6px}
+.empty p{font-size:14px}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:linear-gradient(135deg,#0F6E56,#1D9E75);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;font-weight:600;z-index:200;opacity:0;transition:all 0.25s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.report-stat{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E0E7EF;font-size:14px}
+.report-stat:last-child{border-bottom:none}
+.wt-chart{display:flex;align-items:flex-end;gap:4px;height:80px;padding:4px 0;margin:8px 0}
+.wt-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.wt-bar{width:100%;border-radius:4px 4px 0 0;min-height:4px}
+.wt-bar-label{font-size:9px;color:#546E7A;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
+.rank-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #E0E7EF;cursor:pointer}
+.rank-item:last-child{border-bottom:none}
+.rank-num{font-size:18px;font-weight:700;width:28px;text-align:center;flex-shrink:0}
+.rank-num.gold{color:#BA7517}.rank-num.silver{color:#888}.rank-num.bronze{color:#8B5E3C}
+.rank-info{flex:1;min-width:0}
+.rank-name{font-size:14px;font-weight:600}
+.rank-meta{font-size:12px;color:#546E7A;margin-top:1px}
+.rank-growth{text-align:right;flex-shrink:0}
+.rank-kg{font-size:16px;font-weight:700;color:#0F6E56}.rank-kg.neg{color:#C62828}
+.rank-rate{font-size:11px;color:#546E7A;margin-top:1px}
+.weight-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid #E3F2FD}
+.weight-row:last-child{border-bottom:none}
+.weight-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.weight-val{font-size:15px;font-weight:700;width:65px;flex-shrink:0}
+.weight-date{font-size:12px;color:#546E7A;flex:1;min-width:0}
+.weight-gain{font-size:13px;font-weight:700;flex-shrink:0}
+.weight-gain.pos{color:#0F6E56}.weight-gain.neg{color:#C62828}
+@media(min-width:700px){
+  .desktop-table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
+  .desktop-table th{background:linear-gradient(135deg,#E8F5E9,#F1F8E9);padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:#2E7D32;text-transform:uppercase;letter-spacing:0.05em;border-bottom:2px solid #A5D6A7}
+  .desktop-table td{padding:12px;border-bottom:1px solid #E0E7EF;vertical-align:middle}
+  .desktop-table tr:last-child td{border-bottom:none}
+  .desktop-table tr:hover td{background:#F1F8E9}
+  .mobile-only{display:none}
+}
+@media(max-width:699px){.desktop-only{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-left">
+      <h1>🐄 Mewat Cattle Tracker</h1>
+      <p id="headerSub">Complete livestock management</p>
+    </div>
+    <button class="btn btn-sm btn-primary desktop-only" onclick="openAddAnimal()">+ New Animal</button>
+    <button onclick="loadFromCloud()" title="Sync from cloud" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:8px;padding:6px 10px;cursor:pointer;color:#fff;font-size:13px;font-weight:600">🔄</button>
+  </div>
+  <div id="syncBar" style="display:none;text-align:center;font-size:12px;padding:4px 16px"></div>
+
+  <div class="page active" id="page-animals">
+    <div style="height:12px"></div>
+    <div class="metrics" id="metricsArea"></div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="filterAnimals('all',this)">All</button>
+      <button class="tab-btn" onclick="filterAnimals('active',this)">Active</button>
+      <button class="tab-btn" onclick="filterAnimals('sold',this)">Sold</button>
+    </div>
+    <div id="animalsList"></div>
+  </div>
+
+  <div class="page" id="page-detail">
+    <div class="detail-header">
+      <button class="detail-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:20px;height:20px"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div>
+        <div class="detail-title" id="detailName">—</div>
+        <div class="detail-subtitle" id="detailSub">—</div>
+        <div id="detailBatchBadge"></div>
+      </div>
+      <div style="margin-left:auto"><button class="btn-icon" id="detailEditBtn" style="border-color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.15)"><svg viewBox="0 0 24 24" fill="none" stroke="white" style="width:18px;height:18px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+    </div>
+    <div style="padding:12px 16px 0" id="detailContent"></div>
+  </div>
+
+  <div class="page" id="page-form">
+    <div class="detail-header">
+      <button class="detail-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:20px;height:20px"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div><div class="detail-title" id="formTitle">New Animal</div></div>
+    </div>
+    <div style="padding:16px">
+      <div class="form-group"><label>Batch (optional)</label><select id="fBatch"><option value="">— No Batch —</option></select></div>
+      <div class="form-group"><label>Animal Name / ID *</label><input type="text" id="fName" placeholder="e.g. Bull #1, Black Cow..."></div>
+      <div class="form-row">
+        <div class="form-group"><label>Breed</label><input type="text" id="fBreed" placeholder="Sahiwal, Frisian..."></div>
+        <div class="form-group"><label>Gender</label><select id="fGender"><option value="">— Select —</option><option>Male</option><option>Female</option><option>Bull</option><option>Cow</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Purchase Date *</label><input type="date" id="fPurchaseDate"></div>
+        <div class="form-group"><label>Purchase Price (Rs.) *</label><input type="number" id="fPurchasePrice" placeholder="0" inputmode="numeric"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Weight at Purchase (kg)</label><input type="number" id="fWeightBuy" placeholder="0" inputmode="decimal"></div>
+        <div class="form-group"><label>Age (Months)</label><input type="number" id="fAge" placeholder="0" inputmode="numeric"></div>
+      </div>
+      <div class="form-group"><label>Notes</label><textarea id="fNotes" placeholder="Purchase location, any important notes..."></textarea></div>
+      <button class="btn btn-primary btn-full" onclick="saveAnimal()">✓ Save</button>
+      <div style="height:8px"></div>
+      <button class="btn btn-full" onclick="goBack()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="page" id="page-batches"><div style="height:12px"></div><div id="batchesContent"></div></div>
+  <div class="page" id="page-collective"><div style="height:12px"></div><div id="collectiveContent"></div></div>
+  <div class="page" id="page-report"><div style="height:12px"></div><div id="reportContent"></div></div>
+</div>
+
+<button class="fab" onclick="openAddAnimal()">+</button>
+
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-animals" onclick="showPage('animals')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Animals<div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" id="nav-batches" onclick="showPage('batches')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    Batches<div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" id="nav-collective" onclick="showPage('collective')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Shared<div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" id="nav-report" onclick="showPage('report')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Report<div class="nav-dot"></div>
+  </button>
+</nav>
+
+<!-- Sheets -->
+<div class="sheet-overlay" id="expSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title" id="expSheetTitle">Add Expense</div><button class="btn-icon" onclick="closeSheet('expSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div class="form-group"><label>Expense Type</label><select id="eType"><option>Feed</option><option>Medicine</option><option>Labour</option><option>Veterinary Fee</option><option>Transport</option><option>Other</option></select></div><div class="form-row"><div class="form-group"><label>Amount (Rs.) *</label><input type="number" id="eAmount" placeholder="0" inputmode="numeric"></div><div class="form-group"><label>Date</label><input type="date" id="eDate"></div></div><div class="form-group"><label>Description (optional)</label><input type="text" id="eDesc" placeholder="e.g. 2 bags feed..."></div><button class="btn btn-primary btn-full" onclick="saveExpense()">Add Expense</button></div></div></div>
+
+<div class="sheet-overlay" id="weightSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title" id="weightSheetTitle">Record Weight</div><button class="btn-icon" onclick="closeSheet('weightSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div id="weightPrevInfo" style="margin-bottom:14px"></div><div class="form-row"><div class="form-group"><label>New Weight (kg) *</label><input type="number" id="wWeight" placeholder="0" inputmode="decimal" oninput="updateWeightPreview()"></div><div class="form-group"><label>Date *</label><input type="date" id="wDate" oninput="updateWeightPreview()"></div></div><div class="form-group"><label>Notes (optional)</label><input type="text" id="wNote" placeholder="e.g. monthly check..."></div><div id="weightGainPreview"></div><div style="height:12px"></div><button class="btn btn-primary btn-full" onclick="saveWeight()">✓ Save Weight</button></div></div></div>
+
+<div class="sheet-overlay" id="saleSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title" id="saleSheetTitle">Sell Animal</div><button class="btn-icon" onclick="closeSheet('saleSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div id="saleCostPreview" style="margin-bottom:14px"></div><div class="form-row"><div class="form-group"><label>Sale Price (Rs.) *</label><input type="number" id="sSalePrice" placeholder="0" inputmode="numeric" oninput="updateSalePreview()"></div><div class="form-group"><label>Sale Date</label><input type="date" id="sSaleDate"></div></div><div class="form-row"><div class="form-group"><label>Weight at sale (kg)</label><input type="number" id="sSaleWeight" placeholder="0" inputmode="decimal"></div><div class="form-group"><label>Buyer Name</label><input type="text" id="sBuyer" placeholder="Name or number..."></div></div><div id="saleResultPreview"></div><div style="height:12px"></div><button class="btn btn-primary btn-full" onclick="confirmSale()">✓ Confirm Sale</button></div></div></div>
+
+<div class="sheet-overlay" id="batchSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title">New Batch</div><button class="btn-icon" onclick="closeSheet('batchSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div class="form-group"><label>Batch Name *</label><input type="text" id="bName" placeholder="e.g. Batch June 2026, Cycle 3..."></div><div class="form-row"><div class="form-group"><label>Start Date *</label><input type="date" id="bStartDate"></div><div class="form-group"><label>Target Animals</label><input type="number" id="bTargetCount" placeholder="e.g. 12" inputmode="numeric"></div></div><div class="form-group"><label>Notes</label><textarea id="bNotes" placeholder="Any important notes..."></textarea></div><button class="btn btn-primary btn-full" onclick="saveBatch()">✓ Create Batch</button></div></div></div>
+
+<div class="sheet-overlay" id="carrySheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title">Move Animal to Next Batch</div><button class="btn-icon" onclick="closeSheet('carrySheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div id="carryAnimalInfo" style="margin-bottom:14px"></div><div class="form-group"><label>Move to which Batch?</label><select id="carryToBatch"></select></div><div style="background:#E3F2FD;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#1565C0;margin-bottom:14px">Animal's complete record will be preserved in the new batch.</div><button class="btn btn-primary btn-full" onclick="confirmCarryForward()">✓ Move</button></div></div></div>
+
+<div class="sheet-overlay" id="collectiveSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title">Add Shared Expense</div><button class="btn-icon" onclick="closeSheet('collectiveSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div class="form-row"><div class="form-group"><label>Total Amount (Rs.) *</label><input type="number" id="ceAmount" placeholder="0" inputmode="numeric" oninput="updateCollectivePreview()"></div><div class="form-group"><label>Date</label><input type="date" id="ceDate"></div></div><div class="form-group"><label>Expense Type</label><select id="ceType"><option>Feed</option><option>Medicine</option><option>Labour</option><option>Veterinary Fee</option><option>Transport</option><option>Other</option></select></div><div class="form-group"><label>Description (optional)</label><input type="text" id="ceDesc" placeholder="e.g. 10 bags feed, vet visit..."></div><div class="form-group"><label>Select Animals to divide among *</label><div id="ceAnimalList" style="background:#F5F7FA;border-radius:var(--radius);padding:10px;max-height:180px;overflow-y:auto;border:1.5px solid #CFD8DC"></div><div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-sm" onclick="selectAllAnimals()">Select All</button><button class="btn btn-sm" onclick="deselectAllAnimals()">Deselect All</button></div></div><div id="collectivePreview" style="margin-bottom:8px"></div><button class="btn btn-primary btn-full" onclick="saveCollectiveExpense()">✓ Save & Divide</button></div></div></div>
+
+<!-- Confirm Modal -->
+<div class="sheet-overlay" id="confirmModal"><div class="sheet" style="border-radius:16px 16px 0 0"><div style="padding:24px 20px 8px"><div style="font-size:18px;font-weight:700;margin-bottom:8px;color:#1A237E" id="confirmTitle">Are you sure?</div><div style="font-size:14px;color:#546E7A;line-height:1.5" id="confirmMsg"></div></div><div style="padding:16px 20px 28px;display:flex;flex-direction:column;gap:8px"><button id="confirmOkBtn" class="btn btn-full" style="font-size:15px;padding:13px">Confirm</button><button onclick="closeConfirm()" class="btn btn-full" style="font-size:15px;padding:13px">Cancel</button></div></div></div>
+
+<!-- Alert Modal -->
+<div class="sheet-overlay" id="alertModal"><div class="sheet" style="border-radius:16px 16px 0 0"><div style="padding:24px 20px 8px"><div style="font-size:16px;font-weight:600;line-height:1.5;color:#263238" id="alertMsg"></div></div><div style="padding:12px 20px 28px"><button onclick="closeAlert()" class="btn btn-primary btn-full" style="font-size:15px;padding:13px">OK</button></div></div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Supabase Sync Config ──────────────────────────────────────────────────
+const SB_URL = 'https://khgkzaucytawsowanutp.supabase.co';
+const SB_KEY = 'sb_publishable_-u3dyjLZNd5g7GuE6XcKdg_xLTSLlrF';
+const TBL = 'cattle data';
+
+let animals = [];
+let batches = [];
+let _saveTimer = null;
+
+// Load from localStorage first (instant), then sync from Supabase
+try{ animals = JSON.parse(localStorage.getItem('mct_animals') || '[]'); }catch(e){}
+try{ batches = JSON.parse(localStorage.getItem('mct_batches') || '[]'); }catch(e){}
+
+async function sbGet(key){
+  try{
+    const r = await fetch(`${SB_URL}/rest/v1/${encodeURIComponent(TBL)}?key=eq.${key}&select=value`, {
+      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY}
+    });
+    const d = await r.json();
+    return d && d[0] ? d[0].value : null;
+  }catch(e){ return null; }
+}
+
+async function sbSet(key, value){
+  try{
+    await fetch(`${SB_URL}/rest/v1/${encodeURIComponent(TBL)}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({key, value})
+    });
+  }catch(e){}
+}
+
+let _cloudSaving = false; // block cloud load while save in progress
+
+async function loadFromCloud(){
+  if(!navigator.onLine) return;
+  if(_cloudSaving) return; // don't overwrite if save pending
+  if(_saveTimer) return;   // don't overwrite if debounce active
+  showSyncBar('⏳ Syncing...', '#E3F2FD', '#1565C0', false);
+  try{
+    const [a, b] = await Promise.all([sbGet('animals'), sbGet('batches')]);
+    // Only apply if no save is pending
+    if(!_cloudSaving && !_saveTimer){
+      if(a){ animals = JSON.parse(a); localStorage.setItem('mct_animals', a); }
+      if(b){ batches = JSON.parse(b); localStorage.setItem('mct_batches', b); }
+      populateBatchDropdown('fBatch','');
+      renderAnimals();
+      showSyncBar('✅ Synced', '#E8F5E9', '#2E7D32', true);
+    }
+  }catch(e){ showSyncBar('', '', '', true); }
+}
+
+function sv(){
+  _cloudSaving = true;
+  // Save to localStorage immediately
+  const aStr = JSON.stringify(animals);
+  const bStr = JSON.stringify(batches);
+  try{ localStorage.setItem('mct_animals', aStr); }catch(e){}
+  try{ localStorage.setItem('mct_batches', bStr); }catch(e){}
+  // Push to cloud
+  clearTimeout(_saveTimer);
+  showSyncBar('☁️ Saving...', '#FFF8E1', '#E65100', false);
+  _saveTimer = setTimeout(async ()=>{
+    if(!navigator.onLine){
+      _saveTimer = null; _cloudSaving = false;
+      showSyncBar('💾 Saved locally — will sync when online', '#FFF3E0', '#E65100', true);
+      return;
+    }
+    await Promise.all([sbSet('animals', aStr), sbSet('batches', bStr)]);
+    _saveTimer = null;
+    _cloudSaving = false;
+    showSyncBar('✅ Saved & Synced', '#E8F5E9', '#2E7D32', true);
+  }, 500);
+}
+
+function showSyncBar(msg, bg, color, autoHide){
+  const el = document.getElementById('syncBar');
+  if(!el) return;
+  if(!msg){ el.style.display='none'; return; }
+  el.style.cssText = `display:block;text-align:center;font-size:12px;padding:4px 16px;background:${bg};border-bottom:1px solid ${color}44`;
+  el.innerHTML = `<span style="color:${color};font-weight:600">${msg}</span>`;
+  if(autoHide) setTimeout(()=>{ el.style.display='none'; }, 2500);
+}
+
+// When back online — push local data to cloud
+window.addEventListener('online', ()=>{ sv(); });
+
+// Load from cloud on start — but only ONCE and only if no local changes
+let _initialLoadDone = false;
+setTimeout(async ()=>{
+  if(!_initialLoadDone && !_cloudSaving){
+    _initialLoadDone = true;
+    await loadFromCloud();
+  }
+}, 1500);
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function gId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function fmt(n){ return 'Rs. '+Math.round(n).toLocaleString('en-PK'); }
+function fmtShort(n){ const a=Math.round(Math.abs(n)),s=n<0?'-':''; return a>=100000?s+'Rs. '+(a/100000).toFixed(1)+'L':a>=1000?s+'Rs. '+(a/1000).toFixed(0)+'K':s+'Rs. '+a; }
+function getTotalCost(a){ return a.purchasePrice+(a.expenses||[]).reduce((s,e)=>s+e.amount,0); }
+function getProfit(a){ return a.sold?a.salePrice-getTotalCost(a):null; }
+function daysAgo(d){ return d?Math.floor((Date.now()-new Date(d))/864e5):null; }
+function td(){ return new Date().toISOString().split('T')[0]; }
+function getWLog(a){ return [...(a.weightLog||[])].sort((x,y)=>new Date(x.date)-new Date(y.date)); }
+function getLastW(a){ const l=getWLog(a); return l.length?l[l.length-1]:null; }
+function getTotalGain(a){ const l=getWLog(a); return l.length>=2?l[l.length-1].weight-l[0].weight:null; }
+function getGrowthRate(a){ const l=getWLog(a); if(l.length<2)return null; const d=Math.max(1,(new Date(l[l.length-1].date)-new Date(l[0].date))/864e5); return(l[l.length-1].weight-l[0].weight)/d; }
+function growthBadge(r){ if(r===null)return ''; if(r>=0.6)return '<span class="badge badge-fast">🔥 Fast</span>'; if(r>=0.3)return '<span class="badge badge-mid">📈 Good</span>'; if(r>=0)return '<span class="badge badge-slow">🐢 Slow</span>'; return '<span class="badge badge-slow">⚠️ Low</span>'; }
+function getBatchById(id){ return batches.find(b=>b.id===id); }
+function getBatchAnimals(bId){ return animals.filter(a=>a.batchId===bId); }
+function getBatchStats(bId){
+  const list=getBatchAnimals(bId);
+  const totalPurchase=list.reduce((s,a)=>s+a.purchasePrice,0);
+  const totalExpense=list.reduce((s,a)=>s+(a.expenses||[]).reduce((x,e)=>x+e.amount,0),0);
+  const totalCost=totalPurchase+totalExpense;
+  const sold=list.filter(a=>a.sold);
+  const totalRevenue=sold.reduce((s,a)=>s+(a.salePrice||0),0);
+  const netPL=sold.reduce((s,a)=>s+(a.salePrice-getTotalCost(a)),0);
+  return{list,totalPurchase,totalExpense,totalCost,totalRevenue,netPL,soldCount:sold.length,activeCount:list.filter(a=>!a.sold).length};
+}
+function populateBatchDropdown(selId,selVal){
+  const sel=document.getElementById(selId); if(!sel)return;
+  sel.innerHTML='<option value="">— No Batch —</option>'+batches.filter(b=>b.status!=='closed').map(b=>`<option value="${b.id}"${b.id===selVal?' selected':''}>${b.name}</option>`).join('');
+}
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
+
+// ── MODALS ─────────────────────────────────────────────────────────────────
+function showAlert(msg){ document.getElementById('alertMsg').textContent=msg; document.getElementById('alertModal').style.display='flex'; requestAnimationFrame(()=>document.getElementById('alertModal').classList.add('open')); }
+function closeAlert(){ document.getElementById('alertModal').classList.remove('open'); setTimeout(()=>document.getElementById('alertModal').style.display='',300); }
+let _cb=null;
+function showConfirm(title,msg,okLabel,style,cb){
+  document.getElementById('confirmTitle').textContent=title;
+  document.getElementById('confirmMsg').textContent=msg;
+  const btn=document.getElementById('confirmOkBtn');
+  btn.textContent=okLabel||'Confirm';
+  btn.style.cssText=`font-size:15px;padding:13px;width:100%;justify-content:center;background:${style==='danger'?'#C62828':'#1D9E75'};color:#fff;border-color:${style==='danger'?'#C62828':'#1D9E75'}`;
+  _cb=cb;
+  document.getElementById('confirmModal').style.display='flex';
+  requestAnimationFrame(()=>document.getElementById('confirmModal').classList.add('open'));
+}
+function closeConfirm(){ document.getElementById('confirmModal').classList.remove('open'); setTimeout(()=>document.getElementById('confirmModal').style.display='',300); _cb=null; }
+document.getElementById('confirmOkBtn').onclick=function(){ const cb=_cb; closeConfirm(); if(cb)cb(); };
+document.querySelectorAll('.sheet-overlay').forEach(s=>{ s.addEventListener('click',e=>{ if(e.target===s)closeSheet(s.id); }); });
+document.getElementById('confirmModal').addEventListener('click',e=>{ if(e.target===document.getElementById('confirmModal'))closeConfirm(); });
+document.getElementById('alertModal').addEventListener('click',e=>{ if(e.target===document.getElementById('alertModal'))closeAlert(); });
+
+// ── NAVIGATION ─────────────────────────────────────────────────────────────
+let currentFilter='all',currentDetailId=null,expTargetId=null,saleTargetId=null,weightTargetId=null,editingId=null,prevPage='animals',carryAnimalId=null;
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const ne=document.getElementById('nav-'+name); if(ne)ne.classList.add('active');
+  window.scrollTo(0,0);
+  if(name==='animals')renderAnimals();
+  if(name==='batches')renderBatches();
+  if(name==='collective')renderCollective();
+  if(name==='report')renderReport();
+}
+function goBack(){ showPage(prevPage==='detail'?'animals':prevPage); prevPage='animals'; }
+function openDetail(id){
+  prevPage='animals'; currentDetailId=id; renderDetail(id);
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-detail').classList.add('active'); window.scrollTo(0,0);
+}
+function openAddAnimal(){
+  editingId=null; prevPage=document.querySelector('.page.active').id.replace('page-','');
+  document.getElementById('formTitle').textContent='New Animal';
+  ['fName','fBreed','fNotes','fWeightBuy','fAge','fPurchasePrice'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fPurchaseDate').value=td(); document.getElementById('fGender').value='';
+  populateBatchDropdown('fBatch','');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-form').classList.add('active'); window.scrollTo(0,0);
+  setTimeout(()=>document.getElementById('fName').focus(),200);
+}
+function openEditAnimal(id){
+  editingId=id; const a=animals.find(x=>x.id===id); prevPage='detail';
+  document.getElementById('formTitle').textContent='Edit Animal';
+  document.getElementById('fName').value=a.name; document.getElementById('fBreed').value=a.breed||'';
+  document.getElementById('fGender').value=a.gender||''; document.getElementById('fPurchaseDate').value=a.purchaseDate||td();
+  document.getElementById('fPurchasePrice').value=a.purchasePrice;
+  const fw=getWLog(a)[0]; document.getElementById('fWeightBuy').value=fw?fw.weight:(a.weightBuy||'');
+  document.getElementById('fAge').value=a.age||''; document.getElementById('fNotes').value=a.notes||'';
+  populateBatchDropdown('fBatch',a.batchId||'');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-form').classList.add('active'); window.scrollTo(0,0);
+}
+
+// ── SHEETS ─────────────────────────────────────────────────────────────────
+function openSheet(id){ document.getElementById(id).style.display='flex'; requestAnimationFrame(()=>document.getElementById(id).classList.add('open')); }
+function closeSheet(id){ document.getElementById(id).classList.remove('open'); setTimeout(()=>document.getElementById(id).style.display='',300); }
+
+function openExpense(id){ expTargetId=id; const a=animals.find(x=>x.id===id); document.getElementById('expSheetTitle').textContent='Expense — '+a.name; document.getElementById('eAmount').value=''; document.getElementById('eDesc').value=''; document.getElementById('eDate').value=td(); document.getElementById('eType').value='Feed'; openSheet('expSheet'); setTimeout(()=>document.getElementById('eAmount').focus(),300); }
+function openWeight(id){
+  weightTargetId=id; const a=animals.find(x=>x.id===id); const lw=getLastW(a);
+  document.getElementById('weightSheetTitle').textContent='Weight — '+a.name;
+  document.getElementById('wWeight').value=''; document.getElementById('wNote').value=''; document.getElementById('wDate').value=td(); document.getElementById('weightGainPreview').innerHTML='';
+  document.getElementById('weightPrevInfo').innerHTML=lw?`<div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Last weight</span><span><strong>${lw.weight} kg</strong></span></div><div class="summary-row"><span style="color:#546E7A">Date</span><span>${lw.date||'—'}</span></div></div>`:`<div style="background:#E3F2FD;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#1565C0">This will be the base weight.</div>`;
+  openSheet('weightSheet'); setTimeout(()=>document.getElementById('wWeight').focus(),300);
+}
+function updateWeightPreview(){
+  const w=parseFloat(document.getElementById('wWeight').value)||0; if(!w||!weightTargetId){document.getElementById('weightGainPreview').innerHTML='';return;}
+  const a=animals.find(x=>x.id===weightTargetId); const lw=getLastW(a); if(!lw){document.getElementById('weightGainPreview').innerHTML='';return;}
+  const gain=w-lw.weight; const days=Math.max(1,Math.round((new Date(document.getElementById('wDate').value||td())-new Date(lw.date))/864e5));
+  document.getElementById('weightGainPreview').innerHTML=`<div class="summary-box" style="margin-top:10px"><div class="summary-row"><span style="color:#546E7A">Weight change</span><span class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)} kg</span></div><div class="summary-row"><span style="color:#546E7A">${days} days</span><span>${(gain/days).toFixed(2)} kg/day</span></div><div class="summary-row"><span style="color:#546E7A">Monthly rate</span><span style="font-weight:700">${(gain/days*30).toFixed(1)} kg/month</span></div></div>`;
+}
+function openSale(id){
+  saleTargetId=id; const a=animals.find(x=>x.id===id); const lw=getLastW(a);
+  document.getElementById('saleSheetTitle').textContent='Sell — '+a.name;
+  document.getElementById('sSalePrice').value=''; document.getElementById('sSaleWeight').value=''; document.getElementById('sBuyer').value=''; document.getElementById('sSaleDate').value=td();
+  if(lw)document.getElementById('sSaleWeight').value=lw.weight;
+  const cost=getTotalCost(a);
+  document.getElementById('saleCostPreview').innerHTML=`<div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Purchase Price</span><span>${fmt(a.purchasePrice)}</span></div><div class="summary-row"><span style="color:#546E7A">Total Expenses</span><span>${fmt((a.expenses||[]).reduce((s,e)=>s+e.amount,0))}</span></div><div class="summary-row total"><span>Total Cost</span><span>${fmt(cost)}</span></div>${lw?`<div class="summary-row" style="font-size:13px;color:#546E7A"><span>Last weight</span><span>${lw.weight} kg</span></div>`:''}</div>`;
+  document.getElementById('saleResultPreview').innerHTML=''; openSheet('saleSheet'); setTimeout(()=>document.getElementById('sSalePrice').focus(),300);
+}
+function updateSalePreview(){
+  const sp=parseFloat(document.getElementById('sSalePrice').value)||0; if(!sp||!saleTargetId){document.getElementById('saleResultPreview').innerHTML='';return;}
+  const a=animals.find(x=>x.id===saleTargetId); const cost=getTotalCost(a); const profit=sp-cost;
+  document.getElementById('saleResultPreview').innerHTML=`<div class="summary-box" style="margin-top:10px"><div class="summary-row profit-row"><span>${profit>=0?'Profit 🎉':'Loss 📉'}</span><span class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</span></div><div class="summary-row" style="font-size:13px;color:#546E7A"><span>ROI</span><span>${Math.round(profit/cost*100)}%</span></div></div>`;
+}
+
+// ── CRUD ───────────────────────────────────────────────────────────────────
+function saveAnimal(){
+  const name=document.getElementById('fName').value.trim();
+  const price=parseFloat(document.getElementById('fPurchasePrice').value)||0;
+  const wBuy=parseFloat(document.getElementById('fWeightBuy').value)||0;
+  if(!name){showAlert('Enter animal name.');return;}
+  if(!price){showAlert('Enter purchase price.');return;}
+  if(editingId){
+    const a=animals.find(x=>x.id===editingId);
+    Object.assign(a,{name,breed:document.getElementById('fBreed').value,gender:document.getElementById('fGender').value,purchaseDate:document.getElementById('fPurchaseDate').value,purchasePrice:price,weightBuy:wBuy,age:parseInt(document.getElementById('fAge').value)||0,notes:document.getElementById('fNotes').value,batchId:document.getElementById('fBatch').value||null});
+    if(wBuy){if(!a.weightLog||!a.weightLog.length)a.weightLog=[{id:gId(),weight:wBuy,date:a.purchaseDate||td(),note:'Weight at Purchase'}];else{const s=getWLog(a);const f=a.weightLog.find(x=>x.id===s[0].id);if(f){f.weight=wBuy;f.date=a.purchaseDate||f.date;}}}
+    sv(); toast('✓ Record updated'); openDetail(editingId);
+  }else{
+    const a={id:gId(),name,breed:document.getElementById('fBreed').value,gender:document.getElementById('fGender').value,purchaseDate:document.getElementById('fPurchaseDate').value,purchasePrice:price,weightBuy:wBuy,age:parseInt(document.getElementById('fAge').value)||0,notes:document.getElementById('fNotes').value,batchId:document.getElementById('fBatch').value||null,expenses:[],weightLog:[],sold:false,createdAt:Date.now()};
+    if(wBuy)a.weightLog=[{id:gId(),weight:wBuy,date:a.purchaseDate||td(),note:'Weight at Purchase'}];
+    animals.unshift(a); sv(); toast('✓ '+name+' added'); showPage('animals');
+  }
+}
+function saveExpense(){
+  const amount=parseFloat(document.getElementById('eAmount').value)||0; if(!amount){showAlert('Enter amount.');return;}
+  const a=animals.find(x=>x.id===expTargetId); if(!a)return;
+  a.expenses.push({id:gId(),type:document.getElementById('eType').value,amount,date:document.getElementById('eDate').value,desc:document.getElementById('eDesc').value});
+  sv(); closeSheet('expSheet'); toast('✓ Expense added');
+  if(currentDetailId===expTargetId)renderDetail(expTargetId);
+}
+function saveWeight(){
+  const w=parseFloat(document.getElementById('wWeight').value)||0; const d=document.getElementById('wDate').value;
+  if(!w){showAlert('Enter weight.');return;} if(!d){showAlert('Select date.');return;}
+  const a=animals.find(x=>x.id===weightTargetId); if(!a)return;
+  if(!a.weightLog)a.weightLog=[];
+  a.weightLog.push({id:gId(),weight:w,date:d,note:document.getElementById('wNote').value});
+  sv(); closeSheet('weightSheet');
+  const gain=getTotalGain(a); toast(gain!==null?`✓ ${w}kg — Total: ${gain>=0?'+':''}${gain.toFixed(1)}kg`:`✓ Weight ${w}kg recorded`);
+  if(currentDetailId===weightTargetId)renderDetail(weightTargetId);
+}
+function confirmSale(){
+  const sp=parseFloat(document.getElementById('sSalePrice').value)||0; if(!sp){showAlert('Enter sale price.');return;}
+  const a=animals.find(x=>x.id===saleTargetId); if(!a)return;
+  const sw=parseFloat(document.getElementById('sSaleWeight').value)||0;
+  Object.assign(a,{sold:true,salePrice:sp,saleDate:document.getElementById('sSaleDate').value,saleWeight:sw,buyer:document.getElementById('sBuyer').value});
+  if(sw&&a.saleDate){if(!a.weightLog)a.weightLog=[];if(!a.weightLog.find(w=>w.date===a.saleDate&&w.weight===sw))a.weightLog.push({id:gId(),weight:sw,date:a.saleDate,note:'Weight at Sale'});}
+  sv(); closeSheet('saleSheet'); const p=getProfit(a); toast((p>=0?'🎉 Profit: +':'📉 Loss: ')+fmt(Math.abs(p)));
+  if(currentDetailId===saleTargetId)renderDetail(saleTargetId);
+}
+function deleteExpense(animalId,expId){
+  showConfirm('Delete Expense','This expense will be permanently deleted.','Delete','danger',()=>{
+    const a=animals.find(x=>x.id===animalId); if(a)a.expenses=a.expenses.filter(e=>e.id!==expId);
+    sv(); toast('✓ Expense deleted'); renderDetail(animalId);
+  });
+}
+function deleteWeight(animalId,wId){
+  showConfirm('Delete Weight Entry','This weight record will be permanently deleted.','Delete','danger',()=>{
+    const a=animals.find(x=>x.id===animalId); if(a)a.weightLog=(a.weightLog||[]).filter(w=>w.id!==wId);
+    sv(); toast('✓ Entry deleted'); renderDetail(animalId);
+  });
+}
+function deleteAnimal(id){
+  showConfirm('Delete Animal','Complete record will be permanently deleted. This cannot be undone.','Delete','danger',()=>{
+    animals=animals.filter(a=>a.id!==id); sv(); toast('Record deleted'); showPage('animals');
+  });
+}
+function markUnsold(id){
+  showConfirm('Revert to Active?','Sale record will be removed and animal marked Active again.','Yes, Revert','danger',()=>{
+    const a=animals.find(x=>x.id===id); if(!a)return;
+    a.sold=false; delete a.salePrice; delete a.saleDate; delete a.saleWeight; delete a.buyer;
+    sv(); toast('✓ Marked as Active'); renderDetail(id);
+  });
+}
+function startEditPrice(id){ const a=animals.find(x=>x.id===id); if(!a)return; document.getElementById('priceVal_'+id).style.display='none'; document.getElementById('priceEdit_'+id).style.display='flex'; document.getElementById('priceInput_'+id).value=a.purchasePrice; document.getElementById('priceInput_'+id).focus(); }
+function saveEditPrice(id){ const a=animals.find(x=>x.id===id); if(!a)return; const val=parseFloat(document.getElementById('priceInput_'+id).value)||0; if(!val){showAlert('Enter price.');return;} a.purchasePrice=val; sv(); toast('✓ Purchase price updated'); renderDetail(id); }
+function cancelEditPrice(id){ document.getElementById('priceVal_'+id).style.display=''; document.getElementById('priceEdit_'+id).style.display='none'; }
+function startEditExp(animalId,expId){ const a=animals.find(x=>x.id===animalId); if(!a)return; const e=a.expenses.find(x=>x.id===expId); if(!e)return; document.getElementById('expRow_'+expId).style.display='none'; document.getElementById('expEditRow_'+expId).style.display='table-row'; document.getElementById('expEditAmt_'+expId).value=e.amount; document.getElementById('expEditType_'+expId).value=e.type; document.getElementById('expEditDesc_'+expId).value=e.desc||''; document.getElementById('expEditDate_'+expId).value=e.date||''; }
+function saveEditExp(animalId,expId){ const a=animals.find(x=>x.id===animalId); if(!a)return; const e=a.expenses.find(x=>x.id===expId); if(!e)return; const amt=parseFloat(document.getElementById('expEditAmt_'+expId).value)||0; if(!amt){showAlert('Enter amount.');return;} e.amount=amt; e.type=document.getElementById('expEditType_'+expId).value; e.desc=document.getElementById('expEditDesc_'+expId).value; e.date=document.getElementById('expEditDate_'+expId).value; sv(); toast('✓ Expense updated'); renderDetail(animalId); }
+function cancelEditExp(animalId,expId){ document.getElementById('expRow_'+expId).style.display=''; document.getElementById('expEditRow_'+expId).style.display='none'; }
+
+// ── BATCH CRUD ─────────────────────────────────────────────────────────────
+function openNewBatch(){ document.getElementById('bName').value=''; document.getElementById('bStartDate').value=td(); document.getElementById('bTargetCount').value=''; document.getElementById('bNotes').value=''; openSheet('batchSheet'); setTimeout(()=>document.getElementById('bName').focus(),300); }
+function saveBatch(){ const name=document.getElementById('bName').value.trim(); const sd=document.getElementById('bStartDate').value; if(!name){showAlert('Enter batch name.');return;} batches.unshift({id:gId(),name,startDate:sd,targetCount:parseInt(document.getElementById('bTargetCount').value)||0,notes:document.getElementById('bNotes').value,status:'active',createdAt:Date.now()}); sv(); closeSheet('batchSheet'); toast('✓ '+name+' batch created'); populateBatchDropdown('fBatch',''); renderBatches(); }
+function closeBatch(bId){ const b=batches.find(x=>x.id===bId); if(!b)return; const s=getBatchStats(bId); if(s.activeCount>0){showConfirm('Close Batch?',s.activeCount+' animals still active. Close anyway?','Close','danger',()=>doCloseBatch(bId));}else doCloseBatch(bId); }
+function doCloseBatch(bId){ const b=batches.find(x=>x.id===bId); if(!b)return; b.status='closed'; b.closedAt=td(); sv(); toast('✓ Batch closed'); renderBatches(); }
+function reopenBatch(bId){ const b=batches.find(x=>x.id===bId); if(!b)return; b.status='active'; delete b.closedAt; sv(); toast('✓ Batch reopened'); renderBatches(); }
+function openCarryForward(animalId){ carryAnimalId=animalId; const a=animals.find(x=>x.id===animalId); const others=batches.filter(b=>b.status!=='closed'&&b.id!==a.batchId); if(!others.length){showAlert('No other active batch. Create a new batch first.');return;} document.getElementById('carryAnimalInfo').innerHTML=`<div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Animal</span><span><strong>${a.name}</strong></span></div><div class="summary-row"><span style="color:#546E7A">Current Batch</span><span>${a.batchId&&getBatchById(a.batchId)?getBatchById(a.batchId).name:'No Batch'}</span></div><div class="summary-row"><span style="color:#546E7A">Total Cost So Far</span><span>${fmt(getTotalCost(a))}</span></div></div>`; const sel=document.getElementById('carryToBatch'); sel.innerHTML=others.map(b=>`<option value="${b.id}">${b.name}</option>`).join(''); openSheet('carrySheet'); }
+function confirmCarryForward(){ const a=animals.find(x=>x.id===carryAnimalId); const toBId=document.getElementById('carryToBatch').value; const toB=batches.find(x=>x.id===toBId); if(!a||!toB)return; if(!a.batchHistory)a.batchHistory=[]; a.batchHistory.push({fromBatch:a.batchId||null,fromBatchName:a.batchId&&getBatchById(a.batchId)?getBatchById(a.batchId).name:'No Batch',toBatch:toBId,toBatchName:toB.name,movedOn:td()}); a.batchId=toBId; sv(); closeSheet('carrySheet'); toast(`✓ ${a.name} → ${toB.name}`); renderBatches(); }
+
+// ── COLLECTIVE EXPENSE ─────────────────────────────────────────────────────
+function openCollectiveExpense(){ document.getElementById('ceAmount').value=''; document.getElementById('ceDesc').value=''; document.getElementById('ceDate').value=td(); document.getElementById('ceType').value='Feed'; document.getElementById('collectivePreview').innerHTML=''; const active=animals.filter(a=>!a.sold); const list=document.getElementById('ceAnimalList'); list.innerHTML=active.length?active.map(a=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E0E7EF;cursor:pointer"><input type="checkbox" class="ce-animal-check" value="${a.id}" checked style="width:18px;height:18px;accent-color:#1D9E75" onchange="updateCollectivePreview()"><span style="font-size:14px;font-weight:600">${a.name}</span><span style="font-size:12px;color:#546E7A;margin-left:auto">${a.breed||''}</span></label>`).join(''):'<div style="color:#546E7A;font-size:13px">No active animals.</div>'; openSheet('collectiveSheet'); setTimeout(()=>document.getElementById('ceAmount').focus(),300); }
+function selectAllAnimals(){ document.querySelectorAll('.ce-animal-check').forEach(c=>c.checked=true); updateCollectivePreview(); }
+function deselectAllAnimals(){ document.querySelectorAll('.ce-animal-check').forEach(c=>c.checked=false); updateCollectivePreview(); }
+function updateCollectivePreview(){ const total=parseFloat(document.getElementById('ceAmount').value)||0; const sel=[...document.querySelectorAll('.ce-animal-check:checked')].map(c=>c.value); const el=document.getElementById('collectivePreview'); if(!total||!sel.length){el.innerHTML='';return;} const per=total/sel.length; el.innerHTML=`<div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Total Amount</span><span style="font-weight:700">${fmt(total)}</span></div><div class="summary-row"><span style="color:#546E7A">Animals selected</span><span style="font-weight:700">${sel.length}</span></div><div class="summary-row total"><span>Per Animal</span><span style="color:#0F6E56">${fmt(per)}</span></div></div>`; }
+function saveCollectiveExpense(){ const total=parseFloat(document.getElementById('ceAmount').value)||0; const sel=[...document.querySelectorAll('.ce-animal-check:checked')].map(c=>c.value); const type=document.getElementById('ceType').value; const desc=document.getElementById('ceDesc').value; const date=document.getElementById('ceDate').value; if(!total){showAlert('Enter amount.');return;} if(!sel.length){showAlert('Select at least one animal.');return;} const per=Math.round(total/sel.length); const bId=gId(); sel.forEach(id=>{ const a=animals.find(x=>x.id===id); if(a){if(!a.expenses)a.expenses=[]; a.expenses.push({id:gId(),batchId:bId,type,amount:per,date,desc:desc?desc+' (Shared: '+fmt(total)+'÷'+sel.length+')':'Shared: '+fmt(total)+'÷'+sel.length,isShared:true,totalShared:total,sharedCount:sel.length});}}); sv(); closeSheet('collectiveSheet'); toast(`✓ ${fmt(total)} divided among ${sel.length} animals`); renderCollective(); }
+
+// ── RENDER METRICS ─────────────────────────────────────────────────────────
+function renderMetrics(){
+  const total=animals.length,sold=animals.filter(a=>a.sold),active=animals.filter(a=>!a.sold);
+  const tp=animals.reduce((s,a)=>s+a.purchasePrice,0),te=animals.reduce((s,a)=>s+(a.expenses||[]).reduce((x,e)=>x+e.amount,0),0);
+  const profit=sold.reduce((s,a)=>s+getProfit(a),0);
+  document.getElementById('metricsArea').innerHTML=`
+    <div class="metric" style="background:linear-gradient(135deg,#E8EAF6,#fff);border-left:3px solid #5C6BC0"><div class="metric-label" style="color:#3949AB">Total Animals</div><div class="metric-value">${total}</div></div>
+    <div class="metric" style="background:linear-gradient(135deg,#E8F5E9,#fff);border-left:3px solid #66BB6A"><div class="metric-label" style="color:#2E7D32">Active</div><div class="metric-value" style="color:#2E7D32">${active.length}</div></div>
+    <div class="metric" style="background:linear-gradient(135deg,#F5F5F5,#fff);border-left:3px solid #9E9E9E"><div class="metric-label" style="color:#616161">Sold</div><div class="metric-value" style="color:#616161">${sold.length}</div></div>
+    <div class="metric" style="background:linear-gradient(135deg,#FFF8E1,#fff);border-left:3px solid #FFA726"><div class="metric-label" style="color:#E65100">💰 Purchase</div><div class="metric-value" style="font-size:14px;color:#E65100">${fmtShort(tp)}</div></div>
+    <div class="metric" style="background:linear-gradient(135deg,#FFEBEE,#fff);border-left:3px solid #EF5350"><div class="metric-label" style="color:#B71C1C">🧾 Expense</div><div class="metric-value" style="font-size:14px;color:#C62828">${fmtShort(te)}</div></div>
+    <div class="metric" style="background:linear-gradient(135deg,#E0F2F1,#fff);border-left:3px solid #26A69A"><div class="metric-label" style="color:#004D40">Net P/L</div><div class="metric-value ${profit>=0?'green':'red'}" style="font-size:14px">${(profit>0?'+':'')+fmtShort(profit)}</div></div>
+    <div class="metric" style="background:linear-gradient(135deg,#EDE7F6,#fff);border-left:3px solid #7E57C2"><div class="metric-label" style="color:#4527A0">Total Cost</div><div class="metric-value" style="font-size:14px;color:#4527A0">${fmtShort(tp+te)}</div></div>`;
+  document.getElementById('headerSub').textContent=total+' animals • '+active.length+' active';
+}
+
+// ── RENDER ANIMALS LIST ────────────────────────────────────────────────────
+function filterAnimals(f,el){ currentFilter=f; document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active')); el.classList.add('active'); renderAnimals(); }
+function renderAnimals(){
+  renderMetrics();
+  let list=animals; if(currentFilter==='active')list=animals.filter(a=>!a.sold); if(currentFilter==='sold')list=animals.filter(a=>a.sold);
+  const el=document.getElementById('animalsList');
+  if(!list.length){el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>No animals found</h3><p>Click "+ New Animal" to get started.</p></div>`;return;}
+
+  const mobileCards=list.map(a=>{
+    const cost=getTotalCost(a),profit=getProfit(a),days=daysAgo(a.purchaseDate),rate=getGrowthRate(a),lw=getLastW(a),gain=getTotalGain(a);
+    const batch=a.batchId&&getBatchById(a.batchId);
+    return `<div class="animal-item" onclick="openDetail('${a.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div>
+          <div class="animal-name">${a.name}</div>
+          <div class="animal-breed">${[a.gender,a.breed].filter(Boolean).join(' • ')||'No breed or gender'}</div>
+          ${batch?`<div style="display:inline-block;margin-top:4px;background:linear-gradient(135deg,#FFF3E0,#FFE0B2);color:#E65100;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;border:1px solid #FFCC80">📦 ${batch.name}</div>`:''}
+        </div>
+        <span class="badge ${a.sold?'badge-sold':'badge-active'}">${a.sold?'Sold':'Active'}</span>
+      </div>
+      ${lw?`<div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:#F0F4F8;border-radius:8px"><span style="font-size:18px">⚖️</span><div style="flex:1"><div style="font-size:13px;font-weight:600">${lw.weight} kg <span style="font-size:11px;color:#546E7A;font-weight:400">latest weight</span></div>${gain!==null?`<div style="font-size:12px;margin-top:1px"><span class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)} kg</span> <span style="color:#546E7A">since purchase${rate!==null?' • '+(rate*30).toFixed(1)+' kg/mo':''}</span></div>`:''}</div>${growthBadge(rate)}</div>`:'<div style="margin-top:8px;padding:6px 10px;background:#FFF8E1;border-radius:7px;font-size:12px;color:#E65100">⚠️ Weight not recorded — add from Growth tab</div>'}
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid #E0E7EF">
+        <div style="display:flex;gap:3px;background:#F0F4F8;border-radius:8px;padding:3px;margin-bottom:10px" onclick="event.stopPropagation()">
+          <button onclick="switchCardTab(this,'purchase','${a.id}')" class="ctab ctab-active" style="flex:1;padding:5px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:#263238">💰 Purchase</button>
+          <button onclick="switchCardTab(this,'expense','${a.id}')" class="ctab" style="flex:1;padding:5px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:none;color:#90A4AE">🧾 Expense</button>
+        </div>
+        <div id="ctab-purchase-${a.id}" style="display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-size:11px;color:#546E7A;margin-bottom:2px">Purchase Price</div><div style="font-size:17px;font-weight:700">${fmt(a.purchasePrice)}</div><div style="font-size:11px;color:#546E7A;margin-top:3px">${a.purchaseDate||'—'}</div></div>
+          <div style="text-align:right">${a.sold?`<div style="font-size:11px;color:#546E7A;margin-bottom:2px">Profit / Loss</div><div class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</div>`:`<div style="font-size:11px;color:#546E7A;margin-bottom:2px">Since Purchase</div><div style="font-size:14px;font-weight:700">${days!==null?days+' days':'—'}</div>`}</div>
+        </div>
+        <div id="ctab-expense-${a.id}" style="display:none">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:11px;color:#546E7A;margin-bottom:2px">Total Expenses</div><div style="font-size:17px;font-weight:700">${fmt((a.expenses||[]).reduce((s,e)=>s+e.amount,0))}</div><div style="font-size:11px;color:#546E7A;margin-top:3px">${(a.expenses||[]).length} entries</div></div>
+            <div style="text-align:right"><div style="font-size:11px;color:#546E7A;margin-bottom:2px">Total Cost</div><div style="font-size:14px;font-weight:700">${fmt(cost)}</div></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const tRows=list.map(a=>{
+    const cost=getTotalCost(a),expTotal=(a.expenses||[]).reduce((s,e)=>s+e.amount,0),profit=getProfit(a),days=daysAgo(a.purchaseDate),lw=getLastW(a),gain=getTotalGain(a),rate=getGrowthRate(a);
+    const batch=a.batchId&&getBatchById(a.batchId);
+    return `<tr onclick="openDetail('${a.id}')" style="cursor:pointer"><td><strong>${a.name}</strong><br><small style="color:#546E7A">${a.breed||'—'}</small>${batch?`<br><span style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);color:#1B5E20;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px">📦 ${batch.name}</span>`:''}</td><td>${lw?lw.weight+' kg':'—'}${gain!==null?`<br><small class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)}kg</small>`:''}</td><td>${rate!==null?(rate*30).toFixed(1)+' kg/mo':'—'}</td><td>${fmt(a.purchasePrice)}</td><td>${fmt(expTotal)}</td><td><strong>${fmt(cost)}</strong></td><td>${a.sold?`<span class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</span>`:`<span style="color:#546E7A">${days!==null?days+' days':'—'}</span>`}</td><td><span class="badge ${a.sold?'badge-sold':'badge-active'}">${a.sold?'Sold':'Active'}</span></td></tr>`;
+  }).join('');
+
+  el.innerHTML=`<div class="mobile-only">${mobileCards}</div><div class="desktop-only card" style="padding:0;overflow:hidden"><table class="desktop-table"><thead><tr><th>Name</th><th>Weight</th><th>Growth/Mo</th><th>Purchase</th><th>Expense</th><th>Total Cost</th><th>Profit/Loss</th><th>Status</th></tr></thead><tbody>${tRows}</tbody></table></div>`;
+}
+
+function switchCardTab(btn,tab,id){
+  const wrap=btn.closest('div[onclick]').parentElement;
+  wrap.querySelectorAll('.ctab').forEach(b=>{b.style.background='none';b.style.color='#90A4AE';});
+  btn.style.background='#fff';btn.style.color='#263238';
+  document.getElementById('ctab-purchase-'+id).style.display=tab==='purchase'?'flex':'none';
+  document.getElementById('ctab-expense-'+id).style.display=tab==='expense'?'block':'none';
+}
+
+// ── RENDER DETAIL ──────────────────────────────────────────────────────────
+function renderDetail(id){
+  const a=animals.find(x=>x.id===id); if(!a)return;
+  document.getElementById('detailName').textContent=a.name;
+  document.getElementById('detailSub').textContent=[a.gender,a.breed].filter(Boolean).join(' • ')||'No breed or gender';
+  document.getElementById('detailEditBtn').onclick=()=>openEditAnimal(id);
+  const batch=a.batchId&&getBatchById(a.batchId);
+  const badge=document.getElementById('detailBatchBadge');
+  badge.innerHTML=batch?`<span style="display:inline-block;margin-top:5px;background:linear-gradient(135deg,#EDE7F6,#D1C4E9);color:#4527A0;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;border:1px solid #B39DDB">📦 ${batch.name}</span>`:'';
+
+  const cost=getTotalCost(a),expTotal=(a.expenses||[]).reduce((s,e)=>s+e.amount,0),profit=getProfit(a),days=daysAgo(a.purchaseDate);
+  const wlog=getWLog(a),lw=getLastW(a),gain=getTotalGain(a),rate=getGrowthRate(a);
+
+  let chartHTML='';
+  if(wlog.length>=2){const maxW=Math.max(...wlog.map(w=>w.weight)),minW=Math.min(...wlog.map(w=>w.weight)),range=(maxW-minW)||1; chartHTML=`<div class="wt-chart">${wlog.map(w=>{const h=Math.round(18+((w.weight-minW)/range)*58);const mo=w.date?w.date.slice(5,7)+'/'+w.date.slice(2,4):'';return`<div class="wt-bar-wrap"><div class="wt-bar" style="height:${h}px;background:#1D9E75"></div><div class="wt-bar-label">${w.weight}</div><div class="wt-bar-label" style="color:#90A4AE">${mo}</div></div>`;}).join('')}</div>`;}
+
+  const wRows=wlog.length===0?'<div style="color:#546E7A;font-size:14px;padding:10px 0">No weight recorded.</div>':wlog.map((w,i)=>{const prev=i>0?wlog[i-1]:null,diff=prev?w.weight-prev.weight:null,db=prev?Math.round((new Date(w.date)-new Date(prev.date))/864e5):null;return`<div class="weight-row"><div class="weight-dot" style="background:${i===0?'#1565C0':diff>0?'#1D9E75':diff<0?'#C62828':'#90A4AE'}"></div><div class="weight-val">${w.weight} kg</div><div class="weight-date">${w.date||'—'}${w.note?' • '+w.note:''}${db?' <span style="color:#90A4AE">('+db+'d)</span>':''}</div>${diff!==null?`<div class="weight-gain ${diff>=0?'pos':'neg'}">${diff>=0?'+':''}${diff.toFixed(1)}kg</div>`:'<div class="weight-gain" style="color:#90A4AE">Base</div>'}<button class="btn-icon btn-danger" onclick="event.stopPropagation();deleteWeight('${a.id}','${w.id}')" style="margin-left:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;}).join('');
+
+  const expRows=(a.expenses||[]).length===0?`<tr><td colspan="5" style="padding:12px 0;color:#546E7A;font-size:14px">No expenses recorded.</td></tr>`:[...a.expenses].reverse().map(e=>`<tr id="expRow_${e.id}"><td style="font-weight:600">${e.type}</td><td style="font-weight:700">${fmt(e.amount)}</td><td style="color:#546E7A">${e.desc||'—'}</td><td style="color:#90A4AE">${e.date||'—'}</td><td style="text-align:right;white-space:nowrap"><button class="btn-ghost" onclick="startEditExp('${a.id}','${e.id}')">✏️</button><button class="btn-icon btn-danger" onclick="deleteExpense('${a.id}','${e.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></td></tr><tr id="expEditRow_${e.id}" style="display:none;background:#F5F7FA"><td><select id="expEditType_${e.id}" style="padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;font-size:13px;font-family:inherit"><option>Feed</option><option>Medicine</option><option>Labour</option><option>Veterinary Fee</option><option>Transport</option><option>Other</option></select></td><td><input type="number" id="expEditAmt_${e.id}" inputmode="numeric" style="width:90px;padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;font-size:13px;font-family:inherit"></td><td><input type="text" id="expEditDesc_${e.id}" style="padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;font-size:13px;font-family:inherit;width:100%"></td><td><input type="date" id="expEditDate_${e.id}" style="padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;font-size:13px;font-family:inherit;width:120px"></td><td style="text-align:right;white-space:nowrap"><button class="btn-ghost" style="color:#0F6E56" onclick="saveEditExp('${a.id}','${e.id}')">✓</button><button class="btn-ghost" onclick="cancelEditExp('${a.id}','${e.id}')">✕</button></td></tr>`).join('');
+
+  document.getElementById('detailContent').innerHTML=`
+    <div class="card" style="border-left:4px solid #42A5F5;background:linear-gradient(135deg,#E3F2FD 0%,#fff 60%)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;color:#0D47A1">⚖️ Weight Track (${wlog.length} entries)</div>${!a.sold?`<button class="btn btn-sm btn-primary" onclick="openWeight('${a.id}')">+ Weight</button>`:''}</div>
+      ${lw?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px"><div style="background:#E3F2FD;border-radius:8px;padding:10px;text-align:center;border:1px solid #BBDEFB"><div style="font-size:11px;color:#1565C0">Latest Weight</div><div style="font-size:20px;font-weight:700;margin-top:2px">${lw.weight}<span style="font-size:12px;font-weight:400"> kg</span></div></div><div style="background:#E8F5E9;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8E6C9"><div style="font-size:11px;color:#2E7D32">Total Gain</div><div style="font-size:20px;font-weight:700;margin-top:2px;color:${(gain||0)>=0?'#0F6E56':'#C62828'}">${gain!==null?(gain>=0?'+':'')+gain.toFixed(1):'—'}<span style="font-size:12px;font-weight:400"> kg</span></div></div><div style="background:#EDE7F6;border-radius:8px;padding:10px;text-align:center;border:1px solid #D1C4E9"><div style="font-size:11px;color:#4527A0">Growth/Month</div><div style="font-size:18px;font-weight:700;margin-top:2px;color:#4527A0">${rate!==null?(rate*30).toFixed(1):'—'}<span style="font-size:12px;font-weight:400"> kg</span></div></div></div>${chartHTML}`:''}
+      ${wRows}
+      ${!a.sold&&wlog.length===0?`<button class="btn btn-primary btn-full" style="margin-top:10px" onclick="openWeight('${a.id}')">⚖️ Record First Weight</button>`:''}
+    </div>
+
+    <div class="card" style="border-left:4px solid #FFA726;background:linear-gradient(135deg,#FFF8E1 0%,#fff 60%)">
+      <div class="card-title" style="color:#BF360C">💰 Purchase Price</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0">
+        <div><div style="font-size:12px;color:#546E7A;margin-bottom:2px">Purchase Price</div><div id="priceVal_${a.id}" style="font-size:22px;font-weight:700">${fmt(a.purchasePrice)}</div><div id="priceEdit_${a.id}" style="display:none;align-items:center;gap:8px;margin-top:4px"><input type="number" id="priceInput_${a.id}" class="inline-input" inputmode="numeric" placeholder="0"><button class="btn btn-sm btn-primary" onclick="saveEditPrice('${a.id}')">✓</button><button class="btn btn-sm" onclick="cancelEditPrice('${a.id}')">✕</button></div></div>
+        ${!a.sold?`<button class="btn-ghost" onclick="startEditPrice('${a.id}')">✏️ Edit</button>`:''}
+      </div>
+      <div style="padding:8px 0;border-top:1px solid #FFE0B2;margin-top:4px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div style="font-size:11px;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">Purchase Date</div><div style="font-weight:600">${a.purchaseDate||'—'}</div></div>
+        <div><div style="font-size:11px;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">Starting Weight</div><div style="font-weight:600">${wlog.length?wlog[0].weight+' kg':'—'}</div></div>
+        <div><div style="font-size:11px;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">Breed</div><div style="font-weight:600">${a.breed||'—'}</div></div>
+        <div><div style="font-size:11px;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">Age</div><div style="font-weight:600">${a.age?a.age+' months':'—'}</div></div>
+      </div>${a.notes?`<div style="margin-top:10px;padding:8px 12px;background:#FFF8E1;border-radius:8px;font-size:13px;color:#546E7A">${a.notes}</div>`:''}</div>
+    </div>
+
+    <div class="card" style="border-left:4px solid #EF5350;background:linear-gradient(135deg,#FFEBEE 0%,#fff 60%)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><div class="card-title" style="margin-bottom:2px;color:#B71C1C">🧾 Expenses</div><div style="font-size:12px;color:#546E7A">Total: <strong>${fmt(expTotal)}</strong></div></div>${!a.sold?`<button class="btn btn-sm btn-primary" onclick="openExpense('${a.id}')">+ Expense</button>`:''}</div>
+      <div style="overflow-x:auto"><table class="exp-table" style="width:100%"><thead><tr><th>Type</th><th>Amount</th><th>Description</th><th>Date</th><th></th></tr></thead><tbody>${expRows}</tbody></table></div>
+    </div>
+
+    <div class="card" style="border-left:4px solid #26A69A;background:linear-gradient(135deg,#E0F2F1 0%,#fff 60%)">
+      <div class="card-title" style="color:#004D40">📊 Cost Summary</div>
+      <div class="summary-box" style="background:#E0F2F1;border-color:#80CBC4">
+        <div class="summary-row"><span style="color:#546E7A">Purchase Price</span><span>${fmt(a.purchasePrice)}</span></div>
+        <div class="summary-row"><span style="color:#546E7A">Total Expenses (${(a.expenses||[]).length})</span><span>${fmt(expTotal)}</span></div>
+        <div class="summary-row total"><span>Total Cost</span><span>${fmt(cost)}</span></div>
+        ${a.sold?`<div class="summary-row" style="padding-top:8px"><span style="color:#546E7A">Sale Price</span><span>${fmt(a.salePrice)}</span></div><div class="summary-row profit-row"><span>${profit>=0?'Profit 🎉':'Loss 📉'}</span><span class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</span></div><div class="summary-row" style="font-size:13px;color:#546E7A"><span>ROI</span><span>${Math.round(profit/cost*100)}%</span></div>${a.buyer?`<div class="summary-row" style="font-size:13px;color:#546E7A"><span>Buyer</span><span>${a.buyer}</span></div>`:''}`:''}
+      </div>
+    </div>
+
+    <div class="action-row" style="margin-bottom:20px">
+      ${!a.sold?`<button class="btn btn-primary" onclick="openWeight('${a.id}')">⚖️ Weight</button><button class="btn" onclick="openExpense('${a.id}')">+ Expense</button><button class="btn" style="color:#0F6E56;border-color:#1D9E75" onclick="openSale('${a.id}')">💰 Sell</button><button class="btn btn-danger" onclick="deleteAnimal('${a.id}')">🗑</button>`:`<button class="btn" onclick="markUnsold('${a.id}')">↩ Revert to Active</button><button class="btn btn-danger" onclick="deleteAnimal('${a.id}')">🗑 Delete</button>`}
+    </div>`;
+}
+
+// ── RENDER BATCHES ─────────────────────────────────────────────────────────
+function renderBatches(){
+  const el=document.getElementById('batchesContent'); if(!el)return;
+  if(!batches.length){el.innerHTML=`<div class="card" style="text-align:center;padding:24px"><div style="font-size:36px;margin-bottom:8px">📦</div><div style="font-weight:700;font-size:16px;margin-bottom:6px">No Batches Yet</div><div style="font-size:13px;color:#546E7A;margin-bottom:16px">Create a batch for each cycle — separate records for each</div><button class="btn btn-primary" onclick="openNewBatch()">+ Create First Batch</button></div>`;return;}
+  const active=batches.filter(b=>b.status!=='closed'),closed=batches.filter(b=>b.status==='closed');
+  const allStats=batches.map(b=>getBatchStats(b.id));
+  const gPL=allStats.reduce((s,x)=>s+x.netPL,0),gP=allStats.reduce((s,x)=>s+x.totalPurchase,0),gE=allStats.reduce((s,x)=>s+x.totalExpense,0);
+  const bCard=b=>{const s=getBatchStats(b.id);const isClosed=b.status==='closed';const pc=s.list.length>0?Math.round(s.soldCount/s.list.length*100):0;const aRows=s.list.length?s.list.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #E0E7EF;font-size:13px"><div><span style="font-weight:600">${a.name}</span><span class="badge ${a.sold?'badge-sold':'badge-active'}" style="margin-left:6px;font-size:10px">${a.sold?'Sold':'Active'}</span>${a.batchHistory?.length?'<span style="font-size:10px;color:#546E7A;margin-left:4px">↩ carried over</span>':''}</div><div style="text-align:right"><div style="font-weight:700">${a.sold?`<span class="${(a.salePrice-getTotalCost(a))>=0?'profit-pos':'profit-neg'}">${(a.salePrice-getTotalCost(a))>=0?'+':''}${fmt(a.salePrice-getTotalCost(a))}</span>`:fmt(getTotalCost(a))}</div>${!isClosed&&!a.sold?`<button class="btn-ghost" style="font-size:11px;padding:2px 6px;margin-top:2px" onclick="openCarryForward('${a.id}')">→ Move</button>`:''}</div></div>`).join(''):'<div style="font-size:13px;color:#546E7A;padding:8px 0">No animals</div>';
+  return`<div class="card" style="margin-bottom:10px${isClosed?';opacity:0.85':''}"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-size:16px;font-weight:700">${b.name}</div><div style="font-size:12px;color:#546E7A">${b.startDate||'—'}${b.closedAt?' → '+b.closedAt:''} • ${s.list.length} animals</div></div><span class="badge" style="background:${isClosed?'#ECEFF1':s.activeCount>0?'linear-gradient(135deg,#E8F5E9,#C8E6C9)':'linear-gradient(135deg,#E3F2FD,#BBDEFB)'};color:${isClosed?'#455A64':s.activeCount>0?'#1B5E20':'#0D47A1'}">${isClosed?'Closed':s.activeCount>0?'Active':'All Sold'}</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px"><div style="background:#FFF8E1;border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#E65100">Purchase</div><div style="font-size:14px;font-weight:700;margin-top:2px">${fmtShort(s.totalPurchase)}</div></div><div style="background:#FFEBEE;border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#C62828">Expense</div><div style="font-size:14px;font-weight:700;margin-top:2px;color:#E65100">${fmtShort(s.totalExpense)}</div></div><div style="background:${s.netPL>=0?'#E8F5E9':'#FFEBEE'};border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:${s.netPL>=0?'#2E7D32':'#C62828'}">Net P/L</div><div style="font-size:14px;font-weight:700;margin-top:2px;color:${s.netPL>=0?'#0F6E56':'#C62828'}">${s.netPL>=0?'+':''}${fmtShort(s.netPL)}</div></div></div>
+    ${s.list.length?`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11px;color:#546E7A;margin-bottom:4px"><span>${s.soldCount} sold / ${s.activeCount} active</span><span>${pc}% complete</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pc}%;background:#1D9E75"></div></div></div>`:''}
+    <div style="border-top:1px solid #E0E7EF;padding-top:8px"><div style="font-size:11px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px">Animals</div>${aRows}</div>
+    <div style="display:flex;gap:6px;margin-top:10px">${!isClosed?`<button class="btn btn-sm btn-danger" onclick="closeBatch('${b.id}')">Close Batch</button>`:`<button class="btn btn-sm" onclick="reopenBatch('${b.id}')">Reopen</button>`}</div></div>`;};
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><div style="font-size:16px;font-weight:700">Batches</div><div style="font-size:12px;color:#546E7A">${active.length} active • ${closed.length} closed</div></div><button class="btn btn-primary btn-sm" onclick="openNewBatch()">+ New Batch</button></div>
+  <div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,#E8F5E9,#fff);border-left:4px solid #1D9E75"><div style="font-size:12px;font-weight:700;color:#0F6E56;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Overall — All Batches</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><div style="text-align:center"><div style="font-size:10px;color:#546E7A">Total Purchase</div><div style="font-size:15px;font-weight:700;color:#E65100">${fmtShort(gP)}</div></div><div style="text-align:center"><div style="font-size:10px;color:#546E7A">Total Expense</div><div style="font-size:15px;font-weight:700;color:#C62828">${fmtShort(gE)}</div></div><div style="text-align:center"><div style="font-size:10px;color:#546E7A">Net Profit/Loss</div><div style="font-size:15px;font-weight:700;color:${gPL>=0?'#0F6E56':'#C62828'}">${gPL>=0?'+':''}${fmtShort(gPL)}</div></div></div></div>
+  ${active.length?`<div style="font-size:12px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Active Batches</div>${active.map(bCard).join('')}`:''}
+  ${closed.length?`<div style="font-size:12px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.05em;margin:12px 0 8px">Closed Batches</div>${closed.map(bCard).join('')}`:''}`;
+}
+
+// ── RENDER COLLECTIVE ──────────────────────────────────────────────────────
+function renderCollective(){
+  const el=document.getElementById('collectiveContent');
+  const allShared=animals.flatMap(a=>(a.expenses||[]).filter(e=>e.isShared));
+  const unique=[...new Map(allShared.map(e=>[e.batchId,e])).values()].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const total=unique.reduce((s,e)=>s+e.totalShared,0);
+  if(!unique.length){el.innerHTML=`<div class="card" style="text-align:center;padding:20px"><div style="font-size:32px;margin-bottom:8px">🤝</div><div style="font-weight:700;margin-bottom:6px">No Shared Expenses</div><div style="font-size:13px;color:#546E7A;margin-bottom:16px">When an expense is shared across multiple animals — add it here</div><button class="btn btn-primary" onclick="openCollectiveExpense()">+ Add Shared Expense</button></div>`;return;}
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><div style="font-size:16px;font-weight:700">Shared Expenses</div><div style="font-size:12px;color:#546E7A">Total: ${fmt(total)} — ${unique.length} entries</div></div><button class="btn btn-primary btn-sm" onclick="openCollectiveExpense()">+ Add</button></div>
+  <div style="background:#FFF8E1;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#E65100;margin-bottom:12px">💡 These expenses are automatically added to each animal's Total Cost</div>
+  ${unique.map(e=>`<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="flex:1"><div style="font-weight:700;font-size:15px">${fmt(e.totalShared)} <span style="font-size:12px;font-weight:400;color:#546E7A">— ${e.type}</span></div><div style="font-size:12px;color:#546E7A;margin-top:3px">${e.date||'—'} ${e.desc?'• '+e.desc:''}</div><div style="margin-top:8px;padding:8px 10px;background:#F0F4F8;border-radius:8px"><div style="font-size:11px;color:#546E7A;margin-bottom:4px">DIVIDED AMONG ${e.sharedCount} ANIMALS</div><div style="font-size:13px;font-weight:600;color:#0F6E56">Per animal: ${fmt(e.totalShared/e.sharedCount)}</div></div></div></div></div>`).join('')}`;
+}
+
+// ── RENDER REPORT ──────────────────────────────────────────────────────────
+function renderReport(){
+  const el=document.getElementById('reportContent');
+  if(!animals.length){el.innerHTML=`<div class="empty"><h3>No data found</h3><p>Add animals first.</p></div>`;return;}
+  const sold=animals.filter(a=>a.sold),active=animals.filter(a=>!a.sold);
+  const tc=animals.reduce((s,a)=>s+getTotalCost(a),0),tr=sold.reduce((s,a)=>s+(a.salePrice||0),0),np=sold.reduce((s,a)=>s+getProfit(a),0);
+  const hd=sold.filter(a=>a.purchaseDate&&a.saleDate).map(a=>Math.floor((new Date(a.saleDate)-new Date(a.purchaseDate))/864e5));
+  const ad=hd.length?Math.round(hd.reduce((s,d)=>s+d,0)/hd.length):null;
+  const expByType={};animals.forEach(a=>(a.expenses||[]).forEach(e=>{expByType[e.type]=(expByType[e.type]||0)+e.amount;}));
+  const te=Object.values(expByType).reduce((s,v)=>s+v,0),me=Math.max(...Object.values(expByType),1);
+  const tc2={'Feed':'#1D9E75','Medicine':'#D85A30','Labour':'#BA7517','Veterinary Fee':'#D4537E','Transport':'#378ADD','Other':'#888780'};
+  const expBars=Object.entries(expByType).sort((a,b)=>b[1]-a[1]).map(([t,v])=>`<div class="progress-wrap"><div class="progress-info"><span>${t}</span><span style="font-weight:700">${fmt(v)} <span style="color:#546E7A;font-weight:400">(${Math.round(v/te*100)}%)</span></span></div><div class="progress-bar"><div class="progress-fill" style="width:${Math.round(v/me*100)}%;background:${tc2[t]||'#888'}"></div></div></div>`).join('');
+  const soldRows=[...sold].sort((a,b)=>getProfit(b)-getProfit(a)).map(a=>{const p=getProfit(a),c=getTotalCost(a),g=getTotalGain(a),r=getGrowthRate(a);return`<div class="report-stat"><span>${a.name}${g!==null?` <span style="font-size:12px;color:#546E7A">(${g>=0?'+':''}${g.toFixed(1)}kg${r!==null?', '+(r*30).toFixed(1)+'kg/mo':''})</span>`:''}</span><span><strong class="${p>=0?'profit-pos':'profit-neg'}">${(p>=0?'+':'')+fmt(p)}</strong> <span style="color:#546E7A;font-size:12px">(${Math.round(p/c*100)}% ROI)</span></span></div>`;}).join('');
+  const activeRows=active.map(a=>`<div class="report-stat"><span>${a.name} <span style="color:#546E7A;font-size:12px">(${daysAgo(a.purchaseDate)||0} days)</span></span><span style="font-weight:700">${fmt(getTotalCost(a))}</span></div>`).join('');
+  el.innerHTML=`<div class="card"><div class="card-title">Overall Summary</div><div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Total cost of all animals</span><span>${fmt(tc)}</span></div><div class="summary-row"><span style="color:#546E7A">Total Revenue (sold)</span><span class="profit-pos">${fmt(tr)}</span></div><div class="summary-row total"><span>Net Profit / Loss</span><span class="${np>=0?'profit-pos':'profit-neg'}">${(np>=0?'+':'')+fmt(np)}</span></div>${ad!==null?`<div class="summary-row" style="font-size:13px;color:#546E7A"><span>Avg holding time</span><span>${ad} days</span></div>`:''}</div></div>
+  ${te>0?`<div class="card"><div class="card-title">Expense Breakdown</div>${expBars}</div>`:''}
+  ${active.length?`<div class="card"><div class="card-title">Capital in Active Animals</div>${activeRows}<div class="summary-row total" style="border-top:1px solid #B2DFDB;margin-top:6px;padding-top:10px"><span>Total Invested</span><span>${fmt(active.reduce((s,a)=>s+getTotalCost(a),0))}</span></div></div>`:''}
+  ${sold.length?`<div class="card"><div class="card-title">Sold Animals — Profit / Loss</div>${soldRows}</div>`:''}`;
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+populateBatchDropdown('fBatch','');
+renderAnimals();
+</script>
+</body>
+</html>
