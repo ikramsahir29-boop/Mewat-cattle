@@ -314,14 +314,18 @@ async function loadFromCloud(){
 function sv(){
   _cloudSaving = true;
   // Save to localStorage immediately
-  const aStr = JSON.stringify(animals);
-  const bStr = JSON.stringify(batches);
-  try{ localStorage.setItem('mct_animals', aStr); }catch(e){}
-  try{ localStorage.setItem('mct_batches', bStr); }catch(e){}
-  // Push to cloud
+  try{ localStorage.setItem('mct_animals', JSON.stringify(animals)); }catch(e){}
+  try{ localStorage.setItem('mct_batches', JSON.stringify(batches)); }catch(e){}
+  // Push to cloud — capture data AT PUSH TIME (not now)
   clearTimeout(_saveTimer);
   showSyncBar('☁️ Saving...', '#FFF8E1', '#E65100', false);
   _saveTimer = setTimeout(async ()=>{
+    // Capture LATEST state at time of actual push
+    const aStr = JSON.stringify(animals);
+    const bStr = JSON.stringify(batches);
+    // Also save latest to localStorage
+    try{ localStorage.setItem('mct_animals', aStr); }catch(e){}
+    try{ localStorage.setItem('mct_batches', bStr); }catch(e){}
     if(!navigator.onLine){
       _saveTimer = null; _cloudSaving = false;
       showSyncBar('💾 Saved locally — will sync when online', '#FFF3E0', '#E65100', true);
@@ -331,7 +335,7 @@ function sv(){
     _saveTimer = null;
     _cloudSaving = false;
     showSyncBar('✅ Saved & Synced', '#E8F5E9', '#2E7D32', true);
-  }, 500);
+  }, 300);
 }
 
 function showSyncBar(msg, bg, color, autoHide){
@@ -346,14 +350,8 @@ function showSyncBar(msg, bg, color, autoHide){
 // When back online — push local data to cloud
 window.addEventListener('online', ()=>{ sv(); });
 
-// Load from cloud on start — but only ONCE and only if no local changes
-let _initialLoadDone = false;
-setTimeout(async ()=>{
-  if(!_initialLoadDone && !_cloudSaving){
-    _initialLoadDone = true;
-    await loadFromCloud();
-  }
-}, 1500);
+// NO auto load on startup — user presses 🔄 to sync manually
+// This prevents cloud from overwriting fresh local changes
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 function gId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
