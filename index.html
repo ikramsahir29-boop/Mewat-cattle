@@ -256,7 +256,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 // ── Supabase Sync Config ──────────────────────────────────────────────────
 const SB_URL = 'https://khgkzaucytawsowanutp.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoZ2t6YXVjeXRhd3Nvd2FudXRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDY0MTcsImV4cCI6MjA5NjU4MjQxN30.xwPxNjzHdZSkFigwWNFcNICmVz8ZLSvNhBv0aCw3EAc';
-const TBL = 'cattle data';
+const TBL = 'cattle%20data';
 
 let animals = [];
 let batches = [];
@@ -268,27 +268,29 @@ try{ batches = JSON.parse(localStorage.getItem('mct_batches') || '[]'); }catch(e
 
 async function sbGet(key){
   try{
-    const r = await fetch(`${SB_URL}/rest/v1/${encodeURIComponent(TBL)}?key=eq.${key}&select=value`, {
+    const r = await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${key}&select=value`, {
       headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY}
     });
+    if(!r.ok){ console.error('sbGet error:', r.status, await r.text()); return null; }
     const d = await r.json();
     return d && d[0] ? d[0].value : null;
-  }catch(e){ return null; }
+  }catch(e){ console.error('sbGet catch:', e); return null; }
 }
 
 async function sbSet(key, value){
   try{
-    await fetch(`${SB_URL}/rest/v1/${encodeURIComponent(TBL)}`, {
+    const r = await fetch(`${SB_URL}/rest/v1/${TBL}`, {
       method: 'POST',
       headers: {
         'apikey': SB_KEY,
         'Authorization': 'Bearer ' + SB_KEY,
         'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates'
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
       },
       body: JSON.stringify({key, value})
     });
-  }catch(e){}
+    if(!r.ok){ console.error('sbSet error:', r.status, await r.text()); }
+  }catch(e){ console.error('sbSet catch:', e); }
 }
 
 let _cloudSaving = false; // block cloud load while save in progress
