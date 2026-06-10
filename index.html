@@ -319,31 +319,12 @@ async function loadFromCloud(){
   showSyncBar('⏳ Syncing...','#E3F2FD','#1565C0',false);
   try{
     const [aStr, bStr] = await Promise.all([sbGet('animals'), sbGet('batches')]);
-    if(aStr){
-      const cloudA = JSON.parse(aStr);
-      // Merge: keep all local animals, add any cloud animals not in local
-      const localIds = new Set(animals.map(a=>a.id));
-      const newFromCloud = cloudA.filter(a => !localIds.has(a.id));
-      if(newFromCloud.length > 0){
-        animals = [...animals, ...newFromCloud];
-        try{ localStorage.setItem('mct_animals', JSON.stringify(animals)); }catch(e){}
-      }
-    }
-    if(bStr){
-      const cloudB = JSON.parse(bStr);
-      const localBIds = new Set(batches.map(b=>b.id));
-      const newBFromCloud = cloudB.filter(b => !localBIds.has(b.id));
-      if(newBFromCloud.length > 0){
-        batches = [...batches, ...newBFromCloud];
-        try{ localStorage.setItem('mct_batches', JSON.stringify(batches)); }catch(e){}
-      }
-    }
+    if(_saveTimer){ showSyncBar('💾 Local saved','#FFF8E1','#E65100',true); return; }
+    if(aStr){ animals = JSON.parse(aStr); localStorage.setItem('mct_animals', aStr); }
+    if(bStr){ batches = JSON.parse(bStr); localStorage.setItem('mct_batches', bStr); }
     populateBatchDropdown('fBatch','');
     renderAnimals();
     showSyncBar('✅ Synced','#E8F5E9','#2E7D32',true);
-    // After merging local+cloud, push merged data back to cloud
-    await sbSet('animals', JSON.stringify(animals));
-    await sbSet('batches', JSON.stringify(batches));
   }catch(e){ showSyncBar('⚠️ Failed','#FFEBEE','#C62828',true); }
 }
 
