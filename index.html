@@ -315,11 +315,18 @@ function sv(){
 // LOAD — only when user presses sync button, MERGE don't overwrite
 async function loadFromCloud(){
   if(!navigator.onLine){ showSyncBar('📵 No internet','#FFEBEE','#C62828',true); return; }
-  if(_saveTimer){ showSyncBar('⏳ Wait — saving...','#FFF8E1','#E65100',true); return; }
+  // If save is pending, wait for it to complete first
+  if(_saveTimer){
+    showSyncBar('⏳ Saving first...','#FFF8E1','#E65100',false);
+    await new Promise(r => setTimeout(r, 800));
+  }
   showSyncBar('⏳ Syncing...','#E3F2FD','#1565C0',false);
   try{
     const [aStr, bStr] = await Promise.all([sbGet('animals'), sbGet('batches')]);
-    if(_saveTimer){ showSyncBar('💾 Local saved','#FFF8E1','#E65100',true); return; }
+    if(_saveTimer){ 
+      showSyncBar('⏳ Still saving...','#FFF8E1','#E65100',true); 
+      return; 
+    }
     if(aStr){ animals = JSON.parse(aStr); localStorage.setItem('mct_animals', aStr); }
     if(bStr){ batches = JSON.parse(bStr); localStorage.setItem('mct_batches', bStr); }
     populateBatchDropdown('fBatch','');
