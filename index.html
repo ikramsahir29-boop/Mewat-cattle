@@ -150,7 +150,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <p id="headerSub">Complete livestock management</p>
     </div>
     <button class="btn btn-sm btn-primary desktop-only" onclick="openAddAnimal()">+ New Animal</button>
-    <button onclick="loadFromCloud()" title="Sync from cloud" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:8px;padding:6px 10px;cursor:pointer;color:#fff;font-size:13px;font-weight:600">🔄</button>
+    <button onclick="loadFromCloud()" title="Sync from cloud" style="background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.5);border-radius:10px;padding:10px 16px;cursor:pointer;color:#fff;font-size:16px;font-weight:700;min-width:48px;min-height:48px;display:flex;align-items:center;justify-content:center">🔄</button>
   </div>
   <div id="syncBar" style="display:none;text-align:center;font-size:12px;padding:4px 16px"></div>
 
@@ -216,6 +216,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="nav-item active" id="nav-animals" onclick="showPage('animals')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     Animals<div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" onclick="loadFromCloud()" style="color:#1D9E75">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    Sync<div class="nav-dot"></div>
   </button>
   <button class="nav-item" id="nav-batches" onclick="showPage('batches')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
@@ -302,21 +306,18 @@ async function sbSet(key, value){
 }
 
 async function loadFromCloud(){
-  if(!navigator.onLine) return;
-  if(_cloudSaving) return; // don't overwrite if save pending
-  if(_saveTimer) return;   // don't overwrite if debounce active
+  if(!navigator.onLine){ showSyncBar('📵 No internet', '#FFEBEE', '#C62828', true); return; }
   showSyncBar('⏳ Syncing...', '#E3F2FD', '#1565C0', false);
   try{
     const [a, b] = await Promise.all([sbGet('animals'), sbGet('batches')]);
-    // Only apply if no save is pending
-    if(!_cloudSaving && !_saveTimer){
-      if(a){ animals = JSON.parse(a); localStorage.setItem('mct_animals', a); }
-      if(b){ batches = JSON.parse(b); localStorage.setItem('mct_batches', b); }
-      populateBatchDropdown('fBatch','');
-      renderAnimals();
-      showSyncBar('✅ Synced', '#E8F5E9', '#2E7D32', true);
-    }
-  }catch(e){ showSyncBar('', '', '', true); }
+    if(a){ animals = JSON.parse(a); localStorage.setItem('mct_animals', a); }
+    if(b){ batches = JSON.parse(b); localStorage.setItem('mct_batches', b); }
+    populateBatchDropdown('fBatch','');
+    renderAnimals();
+    showSyncBar('✅ Synced', '#E8F5E9', '#2E7D32', true);
+  }catch(e){ 
+    showSyncBar('⚠️ Sync failed', '#FFEBEE', '#C62828', true); 
+  }
 }
 
 function sv(){
@@ -362,8 +363,12 @@ function showSyncBar(msg, bg, color, autoHide){
 // When back online — push local data to cloud
 window.addEventListener('online', ()=>{ sv(); });
 
-// NO auto load on startup — user presses 🔄 to sync manually
-// This prevents cloud from overwriting fresh local changes
+// Auto sync every 30 seconds
+setInterval(()=>{
+  if(!_cloudSaving && !_saveTimer){
+    loadFromCloud();
+  }
+}, 30000);
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 function gId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
