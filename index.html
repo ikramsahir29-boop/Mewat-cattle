@@ -279,37 +279,27 @@ async function sbGet(key){
 
 async function sbSet(key, value){
   try{
-    // First try to update existing row
-    const rUp = await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${key}`, {
-      method: 'PATCH',
+    const r = await fetch(`${SB_URL}/rest/v1/${TBL}`, {
+      method: 'POST',
       headers: {
         'apikey': SB_KEY,
         'Authorization': 'Bearer ' + SB_KEY,
         'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
+        'Prefer': 'resolution=merge-duplicates'
       },
-      body: JSON.stringify({value})
+      body: JSON.stringify({key: key, value: value})
     });
-    // Check if any row was updated
-    const count = rUp.headers.get('content-range');
-    if(count === '*/0' || !count){
-      // No row exists, insert new
-      const rIn = await fetch(`${SB_URL}/rest/v1/${TBL}`, {
-        method: 'POST',
-        headers: {
-          'apikey': SB_KEY,
-          'Authorization': 'Bearer ' + SB_KEY,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({key, value})
-      });
-      if(!rIn.ok){ console.error('sbSet insert error:', rIn.status, await rIn.text()); }
+    const txt = await r.text();
+    if(!r.ok){
+      console.error('sbSet failed:', r.status, txt);
+      return false;
     }
-  }catch(e){ console.error('sbSet catch:', e); }
+    return true;
+  }catch(e){
+    console.error('sbSet error:', e);
+    return false;
+  }
 }
-
-let _cloudSaving = false; // block cloud load while save in progress
 
 async function loadFromCloud(){
   if(!navigator.onLine) return;
