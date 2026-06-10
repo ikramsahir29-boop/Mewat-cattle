@@ -277,31 +277,18 @@ async function sbGet(key){
 
 async function sbSet(key, value){
   try{
-    // Try PATCH first (update existing row)
-    const rPatch = await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${encodeURIComponent(key)}`,{
-      method:'PATCH',
-      headers:{
-        'apikey':SB_KEY,
-        'Authorization':'Bearer '+SB_KEY,
-        'Content-Type':'application/json',
-        'Prefer':'return=representation'
-      },
-      body:JSON.stringify({value})
+    // Delete existing row first
+    await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${encodeURIComponent(key)}`,{
+      method:'DELETE',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
     });
-    const patched = await rPatch.json();
-    // If no row was updated, INSERT new row
-    if(!patched || !patched.length){
-      await fetch(`${SB_URL}/rest/v1/${TBL}`,{
-        method:'POST',
-        headers:{
-          'apikey':SB_KEY,
-          'Authorization':'Bearer '+SB_KEY,
-          'Content-Type':'application/json'
-        },
-        body:JSON.stringify({key, value})
-      });
-    }
-  }catch(e){ console.error('sbSet error:', e); }
+    // Insert fresh row
+    await fetch(`${SB_URL}/rest/v1/${TBL}`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify({key, value})
+    });
+  }catch(e){ console.error('sbSet:',e); }
 }
 
 // SAVE — always save local first, then push to cloud
