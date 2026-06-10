@@ -271,77 +271,79 @@ async function sbGet(key){
     });
     if(!r.ok) return null;
     const d = await r.json();
-    return d&&d[0]?d[0].value:null;
-  }catch(e){return null;}
+    return (d&&d[0]) ? d[0].value : null;
+  }catch(e){ return null; }
 }
 
-async function sbSet(key,value){
+async function sbSet(key, value){
   try{
-    const r = await fetch(`${SB_URL}/rest/v1/${TBL}`,{
+    await fetch(`${SB_URL}/rest/v1/${TBL}`,{
       method:'POST',
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({key,value})
+      headers:{
+        'apikey':SB_KEY,
+        'Authorization':'Bearer '+SB_KEY,
+        'Content-Type':'application/json',
+        'Prefer':'resolution=merge-duplicates'
+      },
+      body:JSON.stringify({key, value})
     });
-    return r.ok;
-  }catch(e){return false;}
+  }catch(e){}
 }
 
-// MERGE function — combine local + cloud, local takes priority for conflicts
-function mergeAnimals(local, cloud){
-  if(!cloud || !cloud.length) return local;
-  if(!local || !local.length) return cloud;
-  const merged = [...local];
-  cloud.forEach(ca => {
-    const exists = merged.find(a => a.id === ca.id);
-    if(!exists) merged.push(ca); // add cloud-only animals
-  });
-  return merged;
+// SAVE — always save local first, then push to cloud
+function sv(){
+  // Immediately save to localStorage
+  try{ localStorage.setItem('mct_animals', JSON.stringify(animals)); }catch(e){}
+  try{ localStorage.setItem('mct_batches', JSON.stringify(batches)); }catch(e){}
+  // Push to cloud after 500ms debounce
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    const aStr = JSON.stringify(animals);
+    const bStr = JSON.stringify(batches);
+    // Save latest state to localStorage again
+    try{ localStorage.setItem('mct_animals', aStr); }catch(e){}
+    try{ localStorage.setItem('mct_batches', bStr); }catch(e){}
+    if(!navigator.onLine){ showSyncBar('💾 Saved locally','#FFF3E0','#E65100',true); _saveTimer=null; return; }
+    await sbSet('animals', aStr);
+    await sbSet('batches', bStr);
+    showSyncBar('✅ Saved & Synced','#E8F5E9','#2E7D32',true);
+    _saveTimer = null;
+  }, 500);
 }
 
+// LOAD — only when user presses sync button, MERGE don't overwrite
 async function loadFromCloud(){
   if(!navigator.onLine){ showSyncBar('📵 No internet','#FFEBEE','#C62828',true); return; }
-  if(_cloudSaving || _saveTimer){ showSyncBar('⏳ Saving first...','#FFF8E1','#E65100',true); return; }
+  if(_saveTimer){ showSyncBar('⏳ Wait — saving...','#FFF8E1','#E65100',true); return; }
   showSyncBar('⏳ Syncing...','#E3F2FD','#1565C0',false);
   try{
-    const [a,b] = await Promise.all([sbGet('animals'),sbGet('batches')]);
-    if(_cloudSaving||_saveTimer){ showSyncBar('💾 Local saved','#FFF8E1','#E65100',true); return; }
-    if(a){
-      const cloudAnimals = JSON.parse(a);
-      const merged = mergeAnimals(animals, cloudAnimals);
-      animals = merged;
-      localStorage.setItem('mct_animals', JSON.stringify(merged));
+    const [aStr, bStr] = await Promise.all([sbGet('animals'), sbGet('batches')]);
+    if(aStr){
+      const cloudA = JSON.parse(aStr);
+      // Merge: keep all local animals, add any cloud animals not in local
+      const localIds = new Set(animals.map(a=>a.id));
+      const newFromCloud = cloudA.filter(a => !localIds.has(a.id));
+      if(newFromCloud.length > 0){
+        animals = [...animals, ...newFromCloud];
+        try{ localStorage.setItem('mct_animals', JSON.stringify(animals)); }catch(e){}
+      }
     }
-    if(b){
-      const cloudBatches = JSON.parse(b);
-      const mergedB = mergeAnimals(batches, cloudBatches);
-      batches = mergedB;
-      localStorage.setItem('mct_batches', JSON.stringify(mergedB));
+    if(bStr){
+      const cloudB = JSON.parse(bStr);
+      const localBIds = new Set(batches.map(b=>b.id));
+      const newBFromCloud = cloudB.filter(b => !localBIds.has(b.id));
+      if(newBFromCloud.length > 0){
+        batches = [...batches, ...newBFromCloud];
+        try{ localStorage.setItem('mct_batches', JSON.stringify(batches)); }catch(e){}
+      }
     }
     populateBatchDropdown('fBatch','');
     renderAnimals();
     showSyncBar('✅ Synced','#E8F5E9','#2E7D32',true);
+    // After merging local+cloud, push merged data back to cloud
+    await sbSet('animals', JSON.stringify(animals));
+    await sbSet('batches', JSON.stringify(batches));
   }catch(e){ showSyncBar('⚠️ Failed','#FFEBEE','#C62828',true); }
-}
-
-function sv(){
-  _cloudSaving = true;
-  const aStr = JSON.stringify(animals);
-  const bStr = JSON.stringify(batches);
-  try{ localStorage.setItem('mct_animals',aStr); }catch(e){}
-  try{ localStorage.setItem('mct_batches',bStr); }catch(e){}
-  clearTimeout(_saveTimer);
-  showSyncBar('☁️ Saving...','#FFF8E1','#E65100',false);
-  _saveTimer = setTimeout(async()=>{
-    const a = JSON.stringify(animals);
-    const b = JSON.stringify(batches);
-    try{ localStorage.setItem('mct_animals',a); }catch(e){}
-    try{ localStorage.setItem('mct_batches',b); }catch(e){}
-    if(!navigator.onLine){ _saveTimer=null;_cloudSaving=false; showSyncBar('💾 Saved locally','#FFF3E0','#E65100',true); return; }
-    const ok = await Promise.all([sbSet('animals',a),sbSet('batches',b)]);
-    _saveTimer=null; _cloudSaving=false;
-    if(ok[0]&&ok[1]) showSyncBar('✅ Saved & Synced','#E8F5E9','#2E7D32',true);
-    else showSyncBar('💾 Saved locally','#FFF3E0','#E65100',true);
-  },300);
 }
 
 function showSyncBar(msg,bg,color,autoHide){
@@ -352,117 +354,23 @@ function showSyncBar(msg,bg,color,autoHide){
   el.innerHTML=`<span style="color:${color};font-weight:600">${msg}</span>`;
   if(autoHide)setTimeout(()=>{el.style.display='none';},2500);
 }
-function hideSyncStatus(s){showSyncBar(s||'✅ Synced','#E8F5E9','#2E7D32',true);}
+function hideSyncStatus(s){ showSyncBar('✅ Synced','#E8F5E9','#2E7D32',true); }
 
-window.addEventListener('online',()=>{ sv(); });
+window.addEventListener('online', ()=>{ sv(); });
+
 
 let animals = [];
 let batches = [];
-let _saveTimer = null;
-
-// Load from localStorage first (instant), then sync from Supabase
 try{ animals = JSON.parse(localStorage.getItem('mct_animals') || '[]'); }catch(e){}
 try{ batches = JSON.parse(localStorage.getItem('mct_batches') || '[]'); }catch(e){}
 
-async function sbGet(key){
-  try{
-    const r = await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${key}&select=value`, {
-      headers: {'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY}
-    });
-    if(!r.ok){ console.error('sbGet error:', r.status, await r.text()); return null; }
-    const d = await r.json();
-    return d && d[0] ? d[0].value : null;
-  }catch(e){ console.error('sbGet catch:', e); return null; }
-}
 
-async function sbSet(key, value){
-  try{
-    const r = await fetch(`${SB_URL}/rest/v1/${TBL}`, {
-      method: 'POST',
-      headers: {
-        'apikey': SB_KEY,
-        'Authorization': 'Bearer ' + SB_KEY,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates'
-      },
-      body: JSON.stringify({key: key, value: value})
-    });
-    const txt = await r.text();
-    if(!r.ok){
-      console.error('sbSet failed:', r.status, txt);
-      return false;
-    }
-    return true;
-  }catch(e){
-    console.error('sbSet error:', e);
-    return false;
-  }
-}
 
-async function loadFromCloud(){
-  if(!navigator.onLine){ showSyncBar('📵 No internet', '#FFEBEE', '#C62828', true); return; }
-  // Block if save is in progress
-  if(_cloudSaving || _saveTimer){ 
-    showSyncBar('⏳ Save in progress...', '#FFF8E1', '#E65100', true); 
-    return; 
-  }
-  showSyncBar('⏳ Syncing...', '#E3F2FD', '#1565C0', false);
-  try{
-    const [a, b] = await Promise.all([sbGet('animals'), sbGet('batches')]);
-    // Final check — dont overwrite if save started during fetch
-    if(_cloudSaving || _saveTimer){
-      showSyncBar('💾 Local changes kept', '#FFF8E1', '#E65100', true);
-      return;
-    }
-    if(a){ animals = JSON.parse(a); localStorage.setItem('mct_animals', a); }
-    if(b){ batches = JSON.parse(b); localStorage.setItem('mct_batches', b); }
-    populateBatchDropdown('fBatch','');
-    renderAnimals();
-    showSyncBar('✅ Synced', '#E8F5E9', '#2E7D32', true);
-  }catch(e){ 
-    showSyncBar('⚠️ Sync failed', '#FFEBEE', '#C62828', true); 
-  }
-}
 
-function sv(){
-  _cloudSaving = true;
-  // Save to localStorage immediately
-  try{ localStorage.setItem('mct_animals', JSON.stringify(animals)); }catch(e){}
-  try{ localStorage.setItem('mct_batches', JSON.stringify(batches)); }catch(e){}
-  // Push to cloud — capture data AT PUSH TIME (not now)
-  clearTimeout(_saveTimer);
-  showSyncBar('☁️ Saving...', '#FFF8E1', '#E65100', false);
-  _saveTimer = setTimeout(async ()=>{
-    // Capture LATEST state at time of actual push
-    const aStr = JSON.stringify(animals);
-    const bStr = JSON.stringify(batches);
-    // Also save latest to localStorage
-    try{ localStorage.setItem('mct_animals', aStr); }catch(e){}
-    try{ localStorage.setItem('mct_batches', bStr); }catch(e){}
-    if(!navigator.onLine){
-      _saveTimer = null; _cloudSaving = false;
-      showSyncBar('💾 Saved locally — will sync when online', '#FFF3E0', '#E65100', true);
-      return;
-    }
-    try{
-      await Promise.all([sbSet('animals', aStr), sbSet('batches', bStr)]);
-      showSyncBar('✅ Saved & Synced', '#E8F5E9', '#2E7D32', true);
-    }catch(e){
-      showSyncBar('⚠️ Cloud save failed — saved locally', '#FFEBEE', '#C62828', true);
-    }
-    _saveTimer = null;
-    _cloudSaving = false;
-  }, 300);
-}
 
-function showSyncBar(msg, bg, color, autoHide){
-  const el = document.getElementById('syncBar');
-  if(!el) return;
-  if(!msg){ el.style.display='none'; return; }
-  el.style.cssText = `display:block;text-align:center;font-size:12px;padding:4px 16px;background:${bg};border-bottom:1px solid ${color}44`;
-  el.innerHTML = `<span style="color:${color};font-weight:600">${msg}</span>`;
-  if(autoHide) setTimeout(()=>{ el.style.display='none'; }, 2500);
-}
+
+
+
 
 // When back online — push local data to cloud
 window.addEventListener('online', ()=>{ sv(); });
