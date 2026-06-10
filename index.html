@@ -307,9 +307,19 @@ async function sbSet(key, value){
 
 async function loadFromCloud(){
   if(!navigator.onLine){ showSyncBar('📵 No internet', '#FFEBEE', '#C62828', true); return; }
+  // Block if save is in progress
+  if(_cloudSaving || _saveTimer){ 
+    showSyncBar('⏳ Save in progress...', '#FFF8E1', '#E65100', true); 
+    return; 
+  }
   showSyncBar('⏳ Syncing...', '#E3F2FD', '#1565C0', false);
   try{
     const [a, b] = await Promise.all([sbGet('animals'), sbGet('batches')]);
+    // Final check — dont overwrite if save started during fetch
+    if(_cloudSaving || _saveTimer){
+      showSyncBar('💾 Local changes kept', '#FFF8E1', '#E65100', true);
+      return;
+    }
     if(a){ animals = JSON.parse(a); localStorage.setItem('mct_animals', a); }
     if(b){ batches = JSON.parse(b); localStorage.setItem('mct_batches', b); }
     populateBatchDropdown('fBatch','');
@@ -363,12 +373,7 @@ function showSyncBar(msg, bg, color, autoHide){
 // When back online — push local data to cloud
 window.addEventListener('online', ()=>{ sv(); });
 
-// Auto sync every 30 seconds
-setInterval(()=>{
-  if(!_cloudSaving && !_saveTimer){
-    loadFromCloud();
-  }
-}, 30000);
+// Manual sync only — no auto sync to prevent overwriting
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 function gId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
