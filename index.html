@@ -277,17 +277,31 @@ async function sbGet(key){
 
 async function sbSet(key, value){
   try{
-    await fetch(`${SB_URL}/rest/v1/${TBL}`,{
-      method:'POST',
+    // Try PATCH first (update existing row)
+    const rPatch = await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${encodeURIComponent(key)}`,{
+      method:'PATCH',
       headers:{
         'apikey':SB_KEY,
         'Authorization':'Bearer '+SB_KEY,
         'Content-Type':'application/json',
-        'Prefer':'resolution=merge-duplicates'
+        'Prefer':'return=representation'
       },
-      body:JSON.stringify({key, value})
+      body:JSON.stringify({value})
     });
-  }catch(e){}
+    const patched = await rPatch.json();
+    // If no row was updated, INSERT new row
+    if(!patched || !patched.length){
+      await fetch(`${SB_URL}/rest/v1/${TBL}`,{
+        method:'POST',
+        headers:{
+          'apikey':SB_KEY,
+          'Authorization':'Bearer '+SB_KEY,
+          'Content-Type':'application/json'
+        },
+        body:JSON.stringify({key, value})
+      });
+    }
+  }catch(e){ console.error('sbSet error:', e); }
 }
 
 // SAVE — always save local first, then push to cloud
@@ -363,6 +377,8 @@ let animals = [];
 let batches = [];
 try{ animals = JSON.parse(localStorage.getItem('mct_animals') || '[]'); }catch(e){}
 try{ batches = JSON.parse(localStorage.getItem('mct_batches') || '[]'); }catch(e){}
+// Auto load from cloud on first open (only if local is empty)
+if(!animals.length){ setTimeout(loadFromCloud, 500); }
 
 
 
