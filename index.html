@@ -17,28 +17,33 @@
   --radius:10px;--radius-lg:14px;
   --shadow:0 2px 8px rgba(0,0,0,0.08),0 0 0 1px rgba(0,0,0,0.04);
 }
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F0F4F8;color:#263238;font-size:15px;line-height:1.5;min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#ABC4B7;color:#263238;font-size:15px;line-height:1.5;min-height:100vh;transition:background 0.25s ease}
+body.tone-animals{background:linear-gradient(180deg,#EEF0FA 0%,#ABC4B7 220px)}
+body.tone-batches{background:linear-gradient(180deg,#FBF1E4 0%,#ABC4B7 220px)}
+body.tone-collective{background:linear-gradient(180deg,#F5EDF3 0%,#ABC4B7 220px)}
+body.tone-report{background:linear-gradient(180deg,#E9F3EF 0%,#ABC4B7 220px)}
 .app{max-width:900px;margin:0 auto;padding:0 0 80px}
-.header{background:linear-gradient(135deg,#0F6E56,#1D9E75);border-bottom:none;padding:14px 16px;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 8px rgba(15,110,86,0.25)}
+.header{background:linear-gradient(135deg,#B3195C,#1D9E75);border-bottom:none;padding:14px 16px;position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 2px 8px rgba(15,110,86,0.25)}
 .header-left h1{font-size:17px;font-weight:700;color:#fff}
 .header-left p{font-size:12px;color:rgba(255,255,255,0.8);margin-top:1px}
 .page{display:none;padding:12px 16px}.page.active{display:block}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid #E8F5E9;display:flex;z-index:50;box-shadow:0 -2px 10px rgba(0,0,0,0.08)}
-.nav-item{flex:1;padding:10px 4px 12px;text-align:center;cursor:pointer;border:none;background:none;color:#90A4AE;font-size:10px;font-weight:600;transition:color 0.15s;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#1A1626;border-top:1px solid rgba(255,255,255,0.08);display:flex;z-index:50;box-shadow:0 -6px 20px rgba(0,0,0,0.25)}
+.nav-item{flex:1;padding:10px 4px 12px;text-align:center;cursor:pointer;border:none;background:none;color:rgba(255,255,255,0.42);font-size:10px;font-weight:600;transition:color 0.15s;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative}
 .nav-item svg{width:22px;height:22px;stroke-width:1.8}
-.nav-item.active{color:#0F6E56}
-.nav-item .nav-dot{width:4px;height:4px;border-radius:50%;background:#0F6E56;margin:0 auto;display:none}
+.nav-item.active{color:var(--nav-active-color, #6FE3C4)}
+.nav-item .nav-dot{width:4px;height:4px;border-radius:50%;background:var(--nav-active-color, #6FE3C4);margin:0 auto;display:none}
 .nav-item.active .nav-dot{display:block}
+.nav-item.active::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:2.5px;border-radius:0 0 3px 3px;background:var(--nav-active-color, #6FE3C4)}
 .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
 @media(min-width:600px){.metrics{grid-template-columns:repeat(7,1fr)}}
-.metric{background:#fff;border-radius:var(--radius);padding:12px 10px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.07)}
+.metric{background:#EEDDDD;border-radius:var(--radius);padding:12px 10px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,0.07)}
 .metric-label{font-size:11px;color:#546E7A;margin-bottom:4px;line-height:1.3;font-weight:600;text-transform:uppercase;letter-spacing:0.04em}
 .metric-value{font-size:18px;font-weight:700}
 @media(min-width:480px){.metric-value{font-size:15px}}
 .metric-value.green{color:#0F6E56}.metric-value.red{color:#C62828}.metric-value.amber{color:#E65100}.metric-value.purple{color:#4527A0}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--radius);border:1px solid #CFD8DC;background:#fff;color:#37474F;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;white-space:nowrap;text-decoration:none}
 .btn:hover{background:#F5F7FA}.btn:active{transform:scale(0.97)}
-.btn-primary{background:linear-gradient(135deg,#1D9E75,#0F6E56);color:#fff;border-color:#0F6E56;box-shadow:0 2px 6px rgba(15,110,86,0.3)}
+.btn-primary{background:linear-gradient(135deg,#1CA67A,#0E8B6C);color:#fff;border-color:#0F6E56;box-shadow:0 2px 6px rgba(15,110,86,0.3)}
 .btn-primary:hover{background:linear-gradient(135deg,#0F6E56,#085041)}
 .btn-sm{padding:6px 12px;font-size:13px;border-radius:8px}
 .btn-danger{color:#C62828;border-color:transparent;background:none}.btn-danger:hover{background:#FFEBEE}
@@ -46,10 +51,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-icon{padding:7px;border-radius:8px;border:1px solid #E0E7EF;background:#fff;cursor:pointer}
 .btn-ghost{padding:5px 10px;border-radius:7px;border:1px solid transparent;background:none;color:#546E7A;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px}
 .btn-ghost:hover{background:#F5F7FA;border-color:#CFD8DC}
-.fab{position:fixed;bottom:72px;right:16px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1D9E75,#0F6E56);color:#fff;border:none;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(15,110,86,0.45);z-index:40;transition:transform 0.15s}
+.fab{position:fixed;bottom:72px;right:16px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#1CA67A,#0E8B6C);color:#fff;border:none;font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(15,110,86,0.45);z-index:40;transition:transform 0.15s}
 .fab:active{transform:scale(0.93)}
 @media(min-width:600px){.fab{display:none}}
-.card{background:#fff;border-radius:var(--radius-lg);border:1px solid #E0E7EF;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.card{background:#EEDDDD;border-radius:var(--radius-lg);border:1px solid #E0E7EF;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .card-title{font-size:12px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:12px}
 .animal-item{background:#fff;border-radius:var(--radius-lg);border:1px solid #E0E7EF;padding:14px 16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,0.06);cursor:pointer;transition:all 0.15s}
 .animal-item:hover{border-color:#1D9E75;box-shadow:0 4px 12px rgba(29,158,117,0.15);transform:translateY(-1px)}
@@ -157,10 +162,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="page active" id="page-animals">
     <div style="height:12px"></div>
     <div class="metrics" id="metricsArea"></div>
-    <div class="tabs">
-      <button class="tab-btn active" onclick="filterAnimals('all',this)">All</button>
-      <button class="tab-btn" onclick="filterAnimals('active',this)">Active</button>
-      <button class="tab-btn" onclick="filterAnimals('sold',this)">Sold</button>
+    <div class="tabs" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="display:flex;gap:8px;flex:1">
+        <button class="tab-btn active" onclick="filterAnimals('all',this)">All</button>
+        <button class="tab-btn" onclick="filterAnimals('active',this)">Active</button>
+        <button class="tab-btn" onclick="filterAnimals('sold',this)">Sold</button>
+      </div>
+      <button class="btn btn-sm" onclick="downloadReportCSV()" title="Download full report">⬇️</button>
     </div>
     <div id="animalsList"></div>
   </div>
@@ -207,29 +215,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <div class="page" id="page-batches"><div style="height:12px"></div><div id="batchesContent"></div></div>
   <div class="page" id="page-collective"><div style="height:12px"></div><div id="collectiveContent"></div></div>
-  <div class="page" id="page-report"><div style="height:12px"></div><div id="reportContent"></div></div>
+  <div class="page" id="page-report"><div style="height:12px"></div><div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn btn-sm" onclick="downloadReportCSV()">⬇️ Download Report (CSV)</button></div><div id="reportContent"></div></div>
 </div>
 
 <button class="fab" onclick="openAddAnimal()">+</button>
 
 <nav class="bottom-nav">
-  <button class="nav-item active" id="nav-animals" onclick="showPage('animals')">
+  <button class="nav-item active" id="nav-animals" onclick="showPage('animals')" style="--nav-active-color:#7B8CFF">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
     Animals<div class="nav-dot"></div>
   </button>
-  <button class="nav-item" onclick="loadFromCloud()" style="color:#1D9E75">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-    Sync<div class="nav-dot"></div>
-  </button>
-  <button class="nav-item" id="nav-batches" onclick="showPage('batches')">
+  <button class="nav-item" id="nav-batches" onclick="showPage('batches')" style="--nav-active-color:#FFA94D">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
     Batches<div class="nav-dot"></div>
   </button>
-  <button class="nav-item" id="nav-collective" onclick="showPage('collective')">
+  <button class="nav-item" id="nav-collective" onclick="showPage('collective')" style="--nav-active-color:#F060C7">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     Shared<div class="nav-dot"></div>
   </button>
-  <button class="nav-item" id="nav-report" onclick="showPage('report')">
+  <button class="nav-item" id="nav-report" onclick="showPage('report')" style="--nav-active-color:#3FE8B8">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
     Report<div class="nav-dot"></div>
   </button>
@@ -444,6 +448,8 @@ function showPage(name){
   document.getElementById('page-'+name).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const ne=document.getElementById('nav-'+name); if(ne)ne.classList.add('active');
+  document.body.className = document.body.className.replace(/\btone-\S+/g,'').trim();
+  document.body.classList.add('tone-'+name);
   window.scrollTo(0,0);
   if(name==='animals')renderAnimals();
   if(name==='batches')renderBatches();
@@ -485,7 +491,7 @@ function closeSheet(id){ document.getElementById(id).classList.remove('open'); s
 
 function openExpense(id){ expTargetId=id; const a=animals.find(x=>x.id===id); document.getElementById('expSheetTitle').textContent='Expense — '+a.name; document.getElementById('eAmount').value=''; document.getElementById('eDesc').value=''; document.getElementById('eDate').value=td(); document.getElementById('eType').value='Feed'; openSheet('expSheet'); setTimeout(()=>document.getElementById('eAmount').focus(),300); }
 function openWeight(id){
-  weightTargetId=id; const a=animals.find(x=>x.id===id); const lw=getLastW(a);
+  weightTargetId=id; weightEditId=null; const a=animals.find(x=>x.id===id); const lw=getLastW(a);
   document.getElementById('weightSheetTitle').textContent='Weight — '+a.name;
   document.getElementById('wWeight').value=''; document.getElementById('wNote').value=''; document.getElementById('wDate').value=td(); document.getElementById('weightGainPreview').innerHTML='';
   document.getElementById('weightPrevInfo').innerHTML=lw?`<div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Last weight</span><span><strong>${lw.weight} kg</strong></span></div><div class="summary-row"><span style="color:#546E7A">Date</span><span>${lw.date||'—'}</span></div></div>`:`<div style="background:#E3F2FD;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#1565C0">This will be the base weight.</div>`;
@@ -499,12 +505,20 @@ function updateWeightPreview(){
 }
 function openSale(id){
   saleTargetId=id; const a=animals.find(x=>x.id===id); const lw=getLastW(a);
-  document.getElementById('saleSheetTitle').textContent='Sell — '+a.name;
-  document.getElementById('sSalePrice').value=''; document.getElementById('sSaleWeight').value=''; document.getElementById('sBuyer').value=''; document.getElementById('sSaleDate').value=td();
-  if(lw)document.getElementById('sSaleWeight').value=lw.weight;
+  const isEdit = a.sold;
+  document.getElementById('saleSheetTitle').textContent=(isEdit?'Edit Sale — ':'Sell — ')+a.name;
+  if(isEdit){
+    document.getElementById('sSalePrice').value=a.salePrice||'';
+    document.getElementById('sSaleWeight').value=a.saleWeight||'';
+    document.getElementById('sBuyer').value=a.buyer||'';
+    document.getElementById('sSaleDate').value=a.saleDate||td();
+  } else {
+    document.getElementById('sSalePrice').value=''; document.getElementById('sSaleWeight').value=''; document.getElementById('sBuyer').value=''; document.getElementById('sSaleDate').value=td();
+    if(lw)document.getElementById('sSaleWeight').value=lw.weight;
+  }
   const cost=getTotalCost(a);
   document.getElementById('saleCostPreview').innerHTML=`<div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Purchase Price</span><span>${fmt(a.purchasePrice)}</span></div><div class="summary-row"><span style="color:#546E7A">Total Expenses</span><span>${fmt((a.expenses||[]).reduce((s,e)=>s+e.amount,0))}</span></div><div class="summary-row total"><span>Total Cost</span><span>${fmt(cost)}</span></div>${lw?`<div class="summary-row" style="font-size:13px;color:#546E7A"><span>Last weight</span><span>${lw.weight} kg</span></div>`:''}</div>`;
-  document.getElementById('saleResultPreview').innerHTML=''; openSheet('saleSheet'); setTimeout(()=>document.getElementById('sSalePrice').focus(),300);
+  document.getElementById('saleResultPreview').innerHTML=''; openSheet('saleSheet'); setTimeout(()=>{document.getElementById('sSalePrice').focus(); updateSalePreview();},300);
 }
 function updateSalePreview(){
   const sp=parseFloat(document.getElementById('sSalePrice').value)||0; if(!sp||!saleTargetId){document.getElementById('saleResultPreview').innerHTML='';return;}
@@ -537,14 +551,37 @@ function saveExpense(){
   sv(); closeSheet('expSheet'); toast('✓ Expense added');
   if(currentDetailId===expTargetId)renderDetail(expTargetId);
 }
+let weightEditId = null;
+function editWeight(animalId, wId){
+  const a = animals.find(x=>x.id===animalId); if(!a) return;
+  const w = (a.weightLog||[]).find(x=>x.id===wId); if(!w) return;
+  weightTargetId = animalId;
+  weightEditId = wId;
+  document.getElementById('weightSheetTitle').textContent='Edit Weight — '+a.name;
+  document.getElementById('wWeight').value=w.weight;
+  document.getElementById('wNote').value=w.note==='Weight at Sale'?'':(w.note||'');
+  document.getElementById('wDate').value=w.date||td();
+  document.getElementById('weightGainPreview').innerHTML='';
+  document.getElementById('weightPrevInfo').innerHTML=`<div style="background:#FFF8E1;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#E65100">✏️ Editing this weight entry</div>`;
+  openSheet('weightSheet'); setTimeout(()=>document.getElementById('wWeight').focus(),300);
+}
+
 function saveWeight(){
   const w=parseFloat(document.getElementById('wWeight').value)||0; const d=document.getElementById('wDate').value;
   if(!w){showAlert('Enter weight.');return;} if(!d){showAlert('Select date.');return;}
   const a=animals.find(x=>x.id===weightTargetId); if(!a)return;
   if(!a.weightLog)a.weightLog=[];
-  a.weightLog.push({id:gId(),weight:w,date:d,note:document.getElementById('wNote').value});
-  sv(); closeSheet('weightSheet');
-  const gain=getTotalGain(a); toast(gain!==null?`✓ ${w}kg — Total: ${gain>=0?'+':''}${gain.toFixed(1)}kg`:`✓ Weight ${w}kg recorded`);
+  if(weightEditId){
+    const w2=a.weightLog.find(x=>x.id===weightEditId);
+    if(w2){ w2.weight=w; w2.date=d; w2.note=document.getElementById('wNote').value; }
+    weightEditId=null;
+    sv(); closeSheet('weightSheet');
+    toast('✓ Weight entry updated');
+  } else {
+    a.weightLog.push({id:gId(),weight:w,date:d,note:document.getElementById('wNote').value});
+    sv(); closeSheet('weightSheet');
+    const gain=getTotalGain(a); toast(gain!==null?`✓ ${w}kg — Total: ${gain>=0?'+':''}${gain.toFixed(1)}kg`:`✓ Weight ${w}kg recorded`);
+  }
   if(currentDetailId===weightTargetId)renderDetail(weightTargetId);
 }
 function confirmSale(){
@@ -597,8 +634,39 @@ function openCarryForward(animalId){ carryAnimalId=animalId; const a=animals.fin
 function confirmCarryForward(){ const a=animals.find(x=>x.id===carryAnimalId); const toBId=document.getElementById('carryToBatch').value; const toB=batches.find(x=>x.id===toBId); if(!a||!toB)return; if(!a.batchHistory)a.batchHistory=[]; a.batchHistory.push({fromBatch:a.batchId||null,fromBatchName:a.batchId&&getBatchById(a.batchId)?getBatchById(a.batchId).name:'No Batch',toBatch:toBId,toBatchName:toB.name,movedOn:td()}); a.batchId=toBId; sv(); closeSheet('carrySheet'); toast(`✓ ${a.name} → ${toB.name}`); renderBatches(); }
 
 // ── COLLECTIVE EXPENSE ─────────────────────────────────────────────────────
-function selectAllAnimals(){ document.querySelectorAll('.ce-animal-check').forEach(c=>c.checked=true); updateCollectivePreview(); }
-function deselectAllAnimals(){ document.querySelectorAll('.ce-animal-check').forEach(c=>c.checked=false); updateCollectivePreview(); }
+function toggleAnimalCheck(label, evt){
+  if(evt) evt.preventDefault();
+  const checkbox = label.querySelector('.ce-animal-check');
+  const visual = label.querySelector('.ce-checkbox-visual');
+  const newState = !checkbox.checked;
+  checkbox.checked = newState;
+  visual.setAttribute('data-checked', newState ? 'true' : 'false');
+  visual.style.background = newState ? '#1D9E75' : '#fff';
+  visual.style.borderColor = newState ? '#1D9E75' : '#CFD8DC';
+  visual.innerHTML = newState ? '✓' : '';
+  updateCollectivePreview();
+}
+
+function selectAllAnimals(){
+  document.querySelectorAll('.ce-check-label').forEach(label=>{
+    const checkbox = label.querySelector('.ce-animal-check');
+    const visual = label.querySelector('.ce-checkbox-visual');
+    checkbox.checked=true;
+    visual.setAttribute('data-checked','true');
+    visual.style.background='#1D9E75'; visual.style.borderColor='#1D9E75'; visual.innerHTML='✓';
+  });
+  updateCollectivePreview();
+}
+function deselectAllAnimals(){
+  document.querySelectorAll('.ce-check-label').forEach(label=>{
+    const checkbox = label.querySelector('.ce-animal-check');
+    const visual = label.querySelector('.ce-checkbox-visual');
+    checkbox.checked=false;
+    visual.setAttribute('data-checked','false');
+    visual.style.background='#fff'; visual.style.borderColor='#CFD8DC'; visual.innerHTML='';
+  });
+  updateCollectivePreview();
+}
 
 function openCollectiveExpense(){
   document.getElementById('ceAmount').value='';
@@ -609,21 +677,29 @@ function openCollectiveExpense(){
   document.getElementById('collectivePreview').innerHTML='';
   const list=document.getElementById('ceAnimalList');
   // Show ALL animals (active + sold) since sold animals may have been present during the period
-  list.innerHTML=animals.length?animals.map(a=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E0E7EF;cursor:pointer"><input type="checkbox" class="ce-animal-check" value="${a.id}" checked style="width:18px;height:18px;accent-color:#1D9E75" onchange="updateCollectivePreview()"><span style="font-size:14px;font-weight:600">${a.name}</span><span style="font-size:11px;color:#546E7A;margin-left:auto">${a.sold?'Sold '+a.saleDate:'Active'}</span></label>`).join(''):'<div style="color:#546E7A;font-size:13px">No animals.</div>';
+  list.innerHTML=animals.length?animals.map(a=>`<label class="ce-check-label" data-animal-id="${a.id}" onclick="toggleAnimalCheck(this, event)" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E0E7EF;cursor:pointer;user-select:none"><span class="ce-checkbox-visual" data-checked="true" style="width:22px;height:22px;border-radius:6px;border:2px solid #1D9E75;background:#1D9E75;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0">✓</span><input type="checkbox" class="ce-animal-check" value="${a.id}" checked style="display:none"><span style="font-size:14px;font-weight:600">${a.name}</span><span style="font-size:11px;color:#546E7A;margin-left:auto">${a.sold?'Sold '+a.saleDate:'Active'}</span></label>`).join(''):'<div style="color:#546E7A;font-size:13px">No animals.</div>';
   openSheet('collectiveSheet');
   setTimeout(()=>document.getElementById('ceAmount').focus(),300);
 }
 
 // Calculate how many days an animal was present within [periodStart, periodEnd]
 function daysPresentInPeriod(animal, periodStart, periodEnd){
-  const pStart = new Date(periodStart);
-  const pEnd = new Date(periodEnd);
-  const animalStart = animal.purchaseDate ? new Date(animal.purchaseDate) : pStart;
-  const animalEnd = animal.sold && animal.saleDate ? new Date(animal.saleDate) : pEnd;
+  // Use string dates directly where possible to avoid timezone bugs,
+  // but we need actual day counts so convert carefully using UTC noon to avoid DST/timezone shift
+  function toUTCDate(dateStr){
+    const [y,m,d] = dateStr.split('-').map(Number);
+    return new Date(Date.UTC(y, m-1, d, 12, 0, 0)); // noon UTC avoids any day-shift issues
+  }
+  const pStart = toUTCDate(periodStart);
+  const pEnd = toUTCDate(periodEnd);
+  const animalStartStr = animal.purchaseDate || periodStart;
+  const animalEndStr = (animal.sold && animal.saleDate) ? animal.saleDate : periodEnd;
+  const animalStart = toUTCDate(animalStartStr);
+  const animalEnd = toUTCDate(animalEndStr);
   // Overlap between [animalStart, animalEnd] and [pStart, pEnd]
   const overlapStart = animalStart > pStart ? animalStart : pStart;
   const overlapEnd = animalEnd < pEnd ? animalEnd : pEnd;
-  const days = Math.floor((overlapEnd - overlapStart) / 864e5) + 1; // inclusive
+  const days = Math.round((overlapEnd - overlapStart) / 864e5) + 1; // inclusive
   return Math.max(0, days);
 }
 
@@ -645,7 +721,7 @@ function updateCollectivePreview(){
   if(totalAnimalDays<=0){el.innerHTML='<div style="color:#C62828;font-size:13px">No animals were present during this period.</div>';return;}
 
   const perDayRate = total/totalAnimalDays;
-  const preview = animalDays.filter(x=>x.days>0).slice(0,5).map(x=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span>${x.a.name} (${x.days}d)</span><span style="font-weight:600">${fmt(perDayRate*x.days)}</span></div>`).join('');
+  const preview = animalDays.slice(0,6).map(x=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span>${x.a.name} (${x.days}d)${x.days===0?' <span style="color:#C62828">- not in period</span>':''}</span><span style="font-weight:600">${fmt(perDayRate*x.days)}</span></div>`).join('');
 
   el.innerHTML=`<div class="summary-box">
     <div class="summary-row"><span style="color:#546E7A">Total Amount</span><span style="font-weight:700">${fmt(total)}</span></div>
@@ -697,20 +773,44 @@ function saveCollectiveExpense(){
 }
 
 // ── RENDER METRICS ─────────────────────────────────────────────────────────
+let _metricsFilter = 'all'; // 'all' | 'active' | 'sold'
+
+function setMetricsFilter(f){ _metricsFilter = f; renderMetrics(); }
+
 function renderMetrics(){
   const total=animals.length,sold=animals.filter(a=>a.sold),active=animals.filter(a=>!a.sold);
-  const tp=animals.reduce((s,a)=>s+a.purchasePrice,0),te=animals.reduce((s,a)=>s+(a.expenses||[]).reduce((x,e)=>x+e.amount,0),0);
   const farmTotal=farmExpenses.reduce((s,e)=>s+e.amount,0);
-  const combinedExpense=te+farmTotal;
+
+  // Determine which animal set to use for purchase/expense based on filter
+  let scopeAnimals;
+  if(_metricsFilter==='active') scopeAnimals = active;
+  else if(_metricsFilter==='sold') scopeAnimals = sold;
+  else scopeAnimals = animals;
+
+  const tp=scopeAnimals.reduce((s,a)=>s+a.purchasePrice,0);
+  const te=scopeAnimals.reduce((s,a)=>s+(a.expenses||[]).reduce((x,e)=>x+e.amount,0),0);
+  // Farm expense only counted in 'all' or 'sold' view (overall business), not in pure 'active' capital view
+  const combinedExpense = _metricsFilter==='active' ? te : te+farmTotal;
   const profit=sold.reduce((s,a)=>s+getProfit(a),0)-farmTotal;
-  document.getElementById('metricsArea').innerHTML=`
+
+  const toggleHTML = `<div class="tabs" style="margin-bottom:10px">
+    <button class="tab-btn ${_metricsFilter==='all'?'active':''}" onclick="setMetricsFilter('all')">All</button>
+    <button class="tab-btn ${_metricsFilter==='active'?'active':''}" onclick="setMetricsFilter('active')">Active Only</button>
+    <button class="tab-btn ${_metricsFilter==='sold'?'active':''}" onclick="setMetricsFilter('sold')">Sold Only</button>
+  </div>`;
+
+  const purchaseLabel = _metricsFilter==='active' ? '💰 Purchase (Active)' : _metricsFilter==='sold' ? '💰 Purchase (Sold)' : '💰 Purchase';
+  const expenseLabel = _metricsFilter==='active' ? '🧾 Expense (Active)' : _metricsFilter==='sold' ? '🧾 Expense (Sold)' : '🧾 Expense';
+  const costLabel = _metricsFilter==='active' ? 'Capital Locked' : 'Total Cost';
+
+  document.getElementById('metricsArea').innerHTML= toggleHTML + `
     <div class="metric" style="background:linear-gradient(135deg,#E8EAF6,#fff);border-left:3px solid #5C6BC0"><div class="metric-label" style="color:#3949AB">Total Animals</div><div class="metric-value">${total}</div></div>
     <div class="metric" style="background:linear-gradient(135deg,#E8F5E9,#fff);border-left:3px solid #66BB6A"><div class="metric-label" style="color:#2E7D32">Active</div><div class="metric-value" style="color:#2E7D32">${active.length}</div></div>
     <div class="metric" style="background:linear-gradient(135deg,#F5F5F5,#fff);border-left:3px solid #9E9E9E"><div class="metric-label" style="color:#616161">Sold</div><div class="metric-value" style="color:#616161">${sold.length}</div></div>
-    <div class="metric" style="background:linear-gradient(135deg,#FFF8E1,#fff);border-left:3px solid #FFA726"><div class="metric-label" style="color:#E65100">💰 Purchase</div><div class="metric-value" style="font-size:14px;color:#E65100">${fmtShort(tp)}</div></div>
-    <div class="metric" style="background:linear-gradient(135deg,#FFEBEE,#fff);border-left:3px solid #EF5350"><div class="metric-label" style="color:#B71C1C">🧾 Expense</div><div class="metric-value" style="font-size:14px;color:#C62828">${fmtShort(combinedExpense)}</div>${farmTotal>0?`<div style="font-size:9px;color:#B71C1C;margin-top:2px">incl. ${fmtShort(farmTotal)} farm</div>`:''}</div>
-    <div class="metric" style="background:linear-gradient(135deg,#E0F2F1,#fff);border-left:3px solid #26A69A"><div class="metric-label" style="color:#004D40">Net P/L</div><div class="metric-value ${profit>=0?'green':'red'}" style="font-size:14px">${(profit>0?'+':'')+fmtShort(profit)}</div></div>
-    <div class="metric" style="background:linear-gradient(135deg,#EDE7F6,#fff);border-left:3px solid #7E57C2"><div class="metric-label" style="color:#4527A0">Total Cost</div><div class="metric-value" style="font-size:14px;color:#4527A0">${fmtShort(tp+combinedExpense)}</div></div>`;
+    <div class="metric" style="background:linear-gradient(135deg,#FFF8E1,#fff);border-left:3px solid #FFA726"><div class="metric-label" style="color:#E65100">${purchaseLabel}</div><div class="metric-value" style="font-size:14px;color:#E65100">${fmtShort(tp)}</div></div>
+    <div class="metric" style="background:linear-gradient(135deg,#FFEBEE,#fff);border-left:3px solid #EF5350"><div class="metric-label" style="color:#B71C1C">${expenseLabel}</div><div class="metric-value" style="font-size:14px;color:#C62828">${fmtShort(combinedExpense)}</div>${farmTotal>0&&_metricsFilter!=='active'?`<div style="font-size:9px;color:#B71C1C;margin-top:2px">incl. ${fmtShort(farmTotal)} farm</div>`:''}</div>
+    ${_metricsFilter!=='active'?`<div class="metric" style="background:linear-gradient(135deg,#E0F2F1,#fff);border-left:3px solid #26A69A"><div class="metric-label" style="color:#004D40">Net P/L (Sold)</div><div class="metric-value ${profit>=0?'green':'red'}" style="font-size:14px">${(profit>0?'+':'')+fmtShort(profit)}</div></div>`:''}
+    <div class="metric" style="background:linear-gradient(135deg,#EDE7F6,#fff);border-left:3px solid #7E57C2"><div class="metric-label" style="color:#4527A0">${costLabel}</div><div class="metric-value" style="font-size:14px;color:#4527A0">${fmtShort(tp+combinedExpense)}</div></div>`;
   document.getElementById('headerSub').textContent=total+' animals • '+active.length+' active';
 }
 
@@ -742,7 +842,7 @@ function renderAnimals(){
         </div>
         <div id="ctab-purchase-${a.id}" style="display:flex;justify-content:space-between;align-items:center">
           <div><div style="font-size:11px;color:#546E7A;margin-bottom:2px">Purchase Price</div><div style="font-size:17px;font-weight:700">${fmt(a.purchasePrice)}</div><div style="font-size:11px;color:#546E7A;margin-top:3px">${a.purchaseDate||'—'}</div></div>
-          <div style="text-align:right">${a.sold?`<div style="font-size:11px;color:#546E7A;margin-bottom:2px">Profit / Loss</div><div class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</div>`:`<div style="font-size:11px;color:#546E7A;margin-bottom:2px">Since Purchase</div><div style="font-size:14px;font-weight:700">${days!==null?days+' days':'—'}</div>`}</div>
+          <div style="text-align:right">${a.sold?`<div style="font-size:11px;color:#546E7A;margin-bottom:2px">Profit / Loss</div><div class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</div><div style="font-size:10px;color:#90A4AE;margin-top:2px">Sold: ${a.saleDate||'—'}</div>`:`<div style="font-size:11px;color:#546E7A;margin-bottom:2px">Since Purchase</div><div style="font-size:14px;font-weight:700">${days!==null?days+' days':'—'}</div>`}</div>
         </div>
         <div id="ctab-expense-${a.id}" style="display:none">
           <div style="display:flex;justify-content:space-between;align-items:center">
@@ -757,7 +857,7 @@ function renderAnimals(){
   const tRows=list.map(a=>{
     const cost=getTotalCost(a),expTotal=(a.expenses||[]).reduce((s,e)=>s+e.amount,0),profit=getProfit(a),days=daysAgo(a.purchaseDate),lw=getLastW(a),gain=getTotalGain(a),rate=getGrowthRate(a);
     const batch=a.batchId&&getBatchById(a.batchId);
-    return `<tr onclick="openDetail('${a.id}')" style="cursor:pointer"><td><strong>${a.name}</strong><br><small style="color:#546E7A">${a.breed||'—'}</small>${batch?`<br><span style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);color:#1B5E20;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px">📦 ${batch.name}</span>`:''}</td><td>${lw?lw.weight+' kg':'—'}${gain!==null?`<br><small class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)}kg</small>`:''}</td><td>${rate!==null?(rate*30).toFixed(1)+' kg/mo':'—'}</td><td>${fmt(a.purchasePrice)}</td><td>${fmt(expTotal)}</td><td><strong>${fmt(cost)}</strong></td><td>${a.sold?`<span class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</span>`:`<span style="color:#546E7A">${days!==null?days+' days':'—'}</span>`}</td><td><span class="badge ${a.sold?'badge-sold':'badge-active'}">${a.sold?'Sold':'Active'}</span></td></tr>`;
+    return `<tr onclick="openDetail('${a.id}')" style="cursor:pointer"><td><strong>${a.name}</strong><br><small style="color:#546E7A">${a.breed||'—'}</small>${batch?`<br><span style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);color:#1B5E20;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px">📦 ${batch.name}</span>`:''}</td><td>${lw?lw.weight+' kg':'—'}${gain!==null?`<br><small class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)}kg</small>`:''}</td><td>${rate!==null?(rate*30).toFixed(1)+' kg/mo':'—'}</td><td>${fmt(a.purchasePrice)}</td><td>${fmt(expTotal)}</td><td><strong>${fmt(cost)}</strong></td><td>${a.sold?`<span class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</span><br><small style="color:#90A4AE">Sold: ${a.saleDate||'—'}</small>`:`<span style="color:#546E7A">${days!==null?days+' days':'—'}</span>`}</td><td><span class="badge ${a.sold?'badge-sold':'badge-active'}">${a.sold?'Sold':'Active'}</span></td></tr>`;
   }).join('');
 
   el.innerHTML=`<div class="mobile-only">${mobileCards}</div><div class="desktop-only card" style="padding:0;overflow:hidden"><table class="desktop-table"><thead><tr><th>Name</th><th>Weight</th><th>Growth/Mo</th><th>Purchase</th><th>Expense</th><th>Total Cost</th><th>Profit/Loss</th><th>Status</th></tr></thead><tbody>${tRows}</tbody></table></div>`;
@@ -787,7 +887,7 @@ function renderDetail(id){
   let chartHTML='';
   if(wlog.length>=2){const maxW=Math.max(...wlog.map(w=>w.weight)),minW=Math.min(...wlog.map(w=>w.weight)),range=(maxW-minW)||1; chartHTML=`<div class="wt-chart">${wlog.map(w=>{const h=Math.round(18+((w.weight-minW)/range)*58);const mo=w.date?w.date.slice(5,7)+'/'+w.date.slice(2,4):'';return`<div class="wt-bar-wrap"><div class="wt-bar" style="height:${h}px;background:#1D9E75"></div><div class="wt-bar-label">${w.weight}</div><div class="wt-bar-label" style="color:#90A4AE">${mo}</div></div>`;}).join('')}</div>`;}
 
-  const wRows=wlog.length===0?'<div style="color:#546E7A;font-size:14px;padding:10px 0">No weight recorded.</div>':wlog.map((w,i)=>{const prev=i>0?wlog[i-1]:null,diff=prev?w.weight-prev.weight:null,db=prev?Math.round((new Date(w.date)-new Date(prev.date))/864e5):null;return`<div class="weight-row"><div class="weight-dot" style="background:${i===0?'#1565C0':diff>0?'#1D9E75':diff<0?'#C62828':'#90A4AE'}"></div><div class="weight-val">${w.weight} kg</div><div class="weight-date">${w.date||'—'}${w.note?' • '+w.note:''}${db?' <span style="color:#90A4AE">('+db+'d)</span>':''}</div>${diff!==null?`<div class="weight-gain ${diff>=0?'pos':'neg'}">${diff>=0?'+':''}${diff.toFixed(1)}kg</div>`:'<div class="weight-gain" style="color:#90A4AE">Base</div>'}<button class="btn-icon btn-danger" onclick="event.stopPropagation();deleteWeight('${a.id}','${w.id}')" style="margin-left:4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;}).join('');
+  const wRows=wlog.length===0?'<div style="color:#546E7A;font-size:14px;padding:10px 0">No weight recorded.</div>':wlog.map((w,i)=>{const prev=i>0?wlog[i-1]:null,diff=prev?w.weight-prev.weight:null,db=prev?Math.round((new Date(w.date)-new Date(prev.date))/864e5):null;return`<div class="weight-row"><div class="weight-dot" style="background:${i===0?'#1565C0':diff>0?'#1D9E75':diff<0?'#C62828':'#90A4AE'}"></div><div class="weight-val">${w.weight} kg</div><div class="weight-date">${w.date||'—'}${w.note?' • '+w.note:''}${db?' <span style="color:#90A4AE">('+db+'d)</span>':''}</div>${diff!==null?`<div class="weight-gain ${diff>=0?'pos':'neg'}">${diff>=0?'+':''}${diff.toFixed(1)}kg</div>`:'<div class="weight-gain" style="color:#90A4AE">Base</div>'}<button class="btn-ghost" onclick="event.stopPropagation();editWeight('${a.id}','${w.id}')" style="margin-left:4px">✏️</button><button class="btn-icon btn-danger" onclick="event.stopPropagation();deleteWeight('${a.id}','${w.id}')" style="margin-left:2px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;}).join('');
 
   const expRows=(a.expenses||[]).length===0?`<tr><td colspan="5" style="padding:12px 0;color:#546E7A;font-size:14px">No expenses recorded.</td></tr>`:[...a.expenses].reverse().map(e=>`<tr id="expRow_${e.id}"><td style="font-weight:600">${e.type}</td><td style="font-weight:700">${fmt(e.amount)}</td><td style="color:#546E7A">${e.desc||'—'}</td><td style="color:#90A4AE">${e.date||'—'}</td><td style="text-align:right;white-space:nowrap"><button class="btn-ghost" onclick="startEditExp('${a.id}','${e.id}')">✏️</button><button class="btn-icon btn-danger" onclick="deleteExpense('${a.id}','${e.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></td></tr><tr id="expEditRow_${e.id}" style="display:none;background:#F5F7FA"><td><select id="expEditType_${e.id}" style="padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;font-size:13px;font-family:inherit"><option>Feed</option><option>Medicine</option><option>Labour</option><option>Veterinary Fee</option><option>Transport</option><option>Other</option></select></td><td><input type="number" id="expEditAmt_${e.id}" inputmode="numeric" style="width:90px;padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;font-size:13px;font-family:inherit"></td><td><input type="text" id="expEditDesc_${e.id}" style="padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;font-size:13px;font-family:inherit;width:100%"></td><td><input type="date" id="expEditDate_${e.id}" style="padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;font-size:13px;font-family:inherit;width:120px"></td><td style="text-align:right;white-space:nowrap"><button class="btn-ghost" style="color:#0F6E56" onclick="saveEditExp('${a.id}','${e.id}')">✓</button><button class="btn-ghost" onclick="cancelEditExp('${a.id}','${e.id}')">✕</button></td></tr>`).join('');
 
@@ -829,7 +929,7 @@ function renderDetail(id){
     </div>
 
     <div class="action-row" style="margin-bottom:20px">
-      ${!a.sold?`<button class="btn btn-primary" onclick="openWeight('${a.id}')">⚖️ Weight</button><button class="btn" onclick="openExpense('${a.id}')">+ Expense</button><button class="btn" style="color:#0F6E56;border-color:#1D9E75" onclick="openSale('${a.id}')">💰 Sell</button><button class="btn btn-danger" onclick="deleteAnimal('${a.id}')">🗑</button>`:`<button class="btn" onclick="markUnsold('${a.id}')">↩ Revert to Active</button><button class="btn btn-danger" onclick="deleteAnimal('${a.id}')">🗑 Delete</button>`}
+      ${!a.sold?`<button class="btn btn-primary" onclick="openWeight('${a.id}')">⚖️ Weight</button><button class="btn" onclick="openExpense('${a.id}')">+ Expense</button><button class="btn" style="color:#0F6E56;border-color:#1D9E75" onclick="openSale('${a.id}')">💰 Sell</button><button class="btn btn-danger" onclick="deleteAnimal('${a.id}')">🗑</button>`:`<button class="btn" style="color:#0F6E56;border-color:#1D9E75" onclick="openSale('${a.id}')">✏️ Edit Sale</button><button class="btn" onclick="markUnsold('${a.id}')">↩ Revert to Active</button><button class="btn btn-danger" onclick="deleteAnimal('${a.id}')">🗑 Delete</button>`}
     </div>`;
 }
 
@@ -931,6 +1031,31 @@ function deleteSharedExpense(batchId){
 }
 
 // ── RENDER REPORT ──────────────────────────────────────────────────────────
+let _reportDateFrom = '';
+let _reportDateTo = '';
+let _reportSnapshotDate = '';
+
+function applySnapshotDate(){
+  _reportSnapshotDate = document.getElementById('reportSnapshotDate').value;
+  renderReport();
+}
+function clearSnapshotDate(){
+  _reportSnapshotDate = '';
+  renderReport();
+}
+
+function applyReportDateFilter(){
+  _reportDateFrom = document.getElementById('reportDateFrom').value;
+  _reportDateTo = document.getElementById('reportDateTo').value;
+  renderReport();
+}
+function clearReportDateFilter(){
+  _reportDateFrom=''; _reportDateTo='';
+  document.getElementById('reportDateFrom') && (document.getElementById('reportDateFrom').value='');
+  document.getElementById('reportDateTo') && (document.getElementById('reportDateTo').value='');
+  renderReport();
+}
+
 function renderReport(){
   const el=document.getElementById('reportContent');
   if(!animals.length){el.innerHTML=`<div class="empty"><h3>No data found</h3><p>Add animals first.</p></div>`;return;}
@@ -947,18 +1072,182 @@ function renderReport(){
   const farmByType={};farmExpenses.forEach(e=>{farmByType[e.type]=(farmByType[e.type]||0)+e.amount;});
   const farmMe=Math.max(...Object.values(farmByType),1);
   const farmBars=Object.entries(farmByType).sort((a,b)=>b[1]-a[1]).map(([t,v])=>`<div class="progress-wrap"><div class="progress-info"><span>${t}</span><span style="font-weight:700">${fmt(v)} <span style="color:#546E7A;font-weight:400">(${Math.round(v/farmTotal*100)}%)</span></span></div><div class="progress-bar"><div class="progress-fill" style="width:${Math.round(v/farmMe*100)}%;background:#7E57C2"></div></div></div>`).join('');
-  const soldRows=[...sold].sort((a,b)=>getProfit(b)-getProfit(a)).map(a=>{const p=getProfit(a),c=getTotalCost(a),g=getTotalGain(a),r=getGrowthRate(a);return`<div class="report-stat"><span>${a.name}${g!==null?` <span style="font-size:12px;color:#546E7A">(${g>=0?'+':''}${g.toFixed(1)}kg${r!==null?', '+(r*30).toFixed(1)+'kg/mo':''})</span>`:''}</span><span><strong class="${p>=0?'profit-pos':'profit-neg'}">${(p>=0?'+':'')+fmt(p)}</strong> <span style="color:#546E7A;font-size:12px">(${Math.round(p/c*100)}% ROI)</span></span></div>`;}).join('');
+  const soldRows=[...sold].sort((a,b)=>getProfit(b)-getProfit(a)).map(a=>{const p=getProfit(a),c=getTotalCost(a),g=getTotalGain(a),r=getGrowthRate(a);return`<div class="report-stat"><span>${a.name} <span style="font-size:11px;color:#90A4AE">(${a.saleDate||'no date'})</span>${g!==null?` <span style="font-size:12px;color:#546E7A">(${g>=0?'+':''}${g.toFixed(1)}kg${r!==null?', '+(r*30).toFixed(1)+'kg/mo':''})</span>`:''}</span><span><strong class="${p>=0?'profit-pos':'profit-neg'}">${(p>=0?'+':'')+fmt(p)}</strong> <span style="color:#546E7A;font-size:12px">(${Math.round(p/c*100)}% ROI)</span></span></div>`;}).join('');
   const activeRows=active.map(a=>`<div class="report-stat"><span>${a.name} <span style="color:#546E7A;font-size:12px">(${daysAgo(a.purchaseDate)||0} days)</span></span><span style="font-weight:700">${fmt(getTotalCost(a))}</span></div>`).join('');
+
+  // ── DATE-WISE SOLD FILTER ──
+  let filteredSold = sold;
+  if(_reportDateFrom || _reportDateTo){
+    filteredSold = sold.filter(a=>{
+      if(!a.saleDate) return false;
+      const sd = a.saleDate;
+      if(_reportDateFrom && sd < _reportDateFrom) return false;
+      if(_reportDateTo && sd > _reportDateTo) return false;
+      return true;
+    });
+  }
+  const fPurchase = filteredSold.reduce((s,a)=>s+a.purchasePrice,0);
+  const fExpense = filteredSold.reduce((s,a)=>s+(a.expenses||[]).reduce((x,e)=>x+e.amount,0),0);
+  const fRevenue = filteredSold.reduce((s,a)=>s+(a.salePrice||0),0);
+  const fProfit = filteredSold.reduce((s,a)=>s+getProfit(a),0);
+  const isFiltered = _reportDateFrom || _reportDateTo;
+  const filteredRows = [...filteredSold].sort((a,b)=>new Date(b.saleDate)-new Date(a.saleDate)).map(a=>{
+    const p=getProfit(a),c=getTotalCost(a);
+    return `<div class="report-stat"><span>${a.name} <span style="font-size:11px;color:#546E7A">(${a.saleDate||'—'})</span></span><span><strong class="${p>=0?'profit-pos':'profit-neg'}">${(p>=0?'+':'')+fmt(p)}</strong></span></div>`;
+  }).join('');
+
   el.innerHTML=`<div class="card"><div class="card-title">Overall Summary</div><div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Total cost of all animals</span><span>${fmt(tc)}</span></div><div class="summary-row"><span style="color:#546E7A">Total Revenue (sold)</span><span class="profit-pos">${fmt(tr)}</span></div><div class="summary-row"><span style="color:#546E7A">Net P/L from animals</span><span class="${np>=0?'profit-pos':'profit-neg'}">${(np>=0?'+':'')+fmt(np)}</span></div>${farmTotal>0?`<div class="summary-row"><span style="color:#546E7A">Farm Expenses</span><span class="profit-neg">-${fmt(farmTotal)}</span></div><div class="summary-row total"><span>Final Net Profit/Loss</span><span class="${netAfterFarm>=0?'profit-pos':'profit-neg'}">${(netAfterFarm>=0?'+':'')+fmt(netAfterFarm)}</span></div>`:`<div class="summary-row total"><span>Net Profit / Loss</span><span class="${np>=0?'profit-pos':'profit-neg'}">${(np>=0?'+':'')+fmt(np)}</span></div>`}${ad!==null?`<div class="summary-row" style="font-size:13px;color:#546E7A"><span>Avg holding time</span><span>${ad} days</span></div>`:''}</div></div>
   ${te>0?`<div class="card"><div class="card-title">Animal Expense Breakdown</div>${expBars}</div>`:''}
   ${farmTotal>0?`<div class="card"><div class="card-title">Farm Expense Breakdown</div>${farmBars}</div>`:''}
   ${active.length?`<div class="card"><div class="card-title">Capital in Active Animals</div>${activeRows}<div class="summary-row total" style="border-top:1px solid #B2DFDB;margin-top:6px;padding-top:10px"><span>Total Invested</span><span>${fmt(active.reduce((s,a)=>s+getTotalCost(a),0))}</span></div></div>`:''}
-  ${sold.length?`<div class="card"><div class="card-title">Sold Animals — Profit / Loss</div>${soldRows}</div>`:''}`;
+
+  <div class="card">
+    <div class="card-title">📍 Animals Purchased — On a Specific Date</div>
+    <div style="font-size:12px;color:#546E7A;margin-bottom:10px">Select an exact date to see only the animals that were purchased/entered on that day</div>
+    <div class="form-group"><label style="font-size:11px">Select Date</label><input type="date" id="reportSnapshotDate" value="${_reportSnapshotDate}" onchange="applySnapshotDate()"></div>
+    ${_reportSnapshotDate?(()=>{
+      const snapDate=_reportSnapshotDate;
+      const presentAnimals = animals.filter(a=>a.purchaseDate===snapDate);
+      const snapPurchase = presentAnimals.reduce((s,a)=>s+a.purchasePrice,0);
+      const snapExpense = presentAnimals.reduce((s,a)=>s+(a.expenses||[]).reduce((x,e)=>x+e.amount,0),0);
+      const rows = presentAnimals.map(a=>`<div class="report-stat"><span>${a.name} <span style="font-size:11px;color:#546E7A">${a.sold?'(sold '+a.saleDate+')':'(active)'}</span></span><span style="font-weight:700">${fmt(a.purchasePrice)}</span></div>`).join('');
+      return `<button class="btn btn-sm" onclick="clearSnapshotDate()" style="margin-bottom:10px">✕ Clear</button>
+        <div class="summary-box">
+          <div class="summary-row"><span style="color:#546E7A">Animals Purchased on ${snapDate}</span><span style="font-weight:700">${presentAnimals.length}</span></div>
+          <div class="summary-row"><span style="color:#546E7A">Total Purchase Value</span><span>${fmt(snapPurchase)}</span></div>
+          <div class="summary-row total"><span>Total Expenses (lifetime)</span><span>${fmt(snapExpense)}</span></div>
+        </div>
+        ${presentAnimals.length?`<div style="margin-top:10px">${rows}</div>`:`<div style="text-align:center;padding:16px;color:#546E7A;font-size:13px">No animals were purchased on this exact date.</div>`}`;
+    })():`<div style="text-align:center;padding:10px;color:#546E7A;font-size:13px">Pick a date above to see which animals were on the farm that day.</div>`}
+  </div>
+
+  <div class="card">
+    <div class="card-title">📅 Sold Animals — By Sale Date</div>
+    <div style="font-size:12px;color:#546E7A;margin-bottom:10px">Select a date range to see sale performance for that period</div>
+    <div class="form-row">
+      <div class="form-group"><label style="font-size:11px">From Date</label><input type="date" id="reportDateFrom" value="${_reportDateFrom}" onchange="applyReportDateFilter()"></div>
+      <div class="form-group"><label style="font-size:11px">To Date</label><input type="date" id="reportDateTo" value="${_reportDateTo}" onchange="applyReportDateFilter()"></div>
+    </div>
+    ${isFiltered?`<button class="btn btn-sm" onclick="clearReportDateFilter()" style="margin-bottom:10px">✕ Clear Filter</button>`:''}
+    ${isFiltered?`
+      <div class="summary-box">
+        <div class="summary-row"><span style="color:#546E7A">Animals Sold</span><span style="font-weight:700">${filteredSold.length}</span></div>
+        <div class="summary-row"><span style="color:#546E7A">Total Purchase Price</span><span>${fmt(fPurchase)}</span></div>
+        <div class="summary-row"><span style="color:#546E7A">Total Expenses</span><span>${fmt(fExpense)}</span></div>
+        <div class="summary-row"><span style="color:#546E7A">Total Sale Revenue</span><span class="profit-pos">${fmt(fRevenue)}</span></div>
+        <div class="summary-row total"><span>Net Profit/Loss</span><span class="${fProfit>=0?'profit-pos':'profit-neg'}">${(fProfit>=0?'+':'')+fmt(fProfit)}</span></div>
+      </div>
+      ${filteredSold.length?`<div style="margin-top:10px">${filteredRows}</div>`:`<div style="text-align:center;padding:16px;color:#546E7A;font-size:13px">No animals sold in this date range.</div>`}
+    `:`<div style="text-align:center;padding:10px;color:#546E7A;font-size:13px">Pick a date range above to see sold-animal totals for that period.</div>`}
+  </div>
+
+  ${sold.length?`<div class="card"><div class="card-title">All Sold Animals — Profit / Loss</div>${soldRows}</div>`:''}`;
+}
+
+// ── EXPORT / DOWNLOAD ────────────────────────────────────────────────────────
+function csvEscape(val){
+  if(val===null||val===undefined) return '';
+  const s=String(val);
+  if(s.includes(',')||s.includes('"')||s.includes('\n')) return '"'+s.replace(/"/g,'""')+'"';
+  return s;
+}
+
+function downloadReportCSV(){
+  const rows=[];
+  rows.push(['Mewat Cattle Tracker — Full Report']);
+  rows.push(['Generated on', new Date().toLocaleString()]);
+  rows.push([]);
+
+  // Section 1: Animal Summary
+  rows.push(['ANIMAL SUMMARY']);
+  rows.push(['Name','Breed','Gender','Batch','Purchase Date','Purchase Price','Total Expenses','Total Cost','Status','Sale Date','Sale Price','Profit/Loss','Buyer']);
+  animals.forEach(a=>{
+    const batch=a.batchId&&getBatchById(a.batchId);
+    const expTotal=(a.expenses||[]).reduce((s,e)=>s+e.amount,0);
+    const cost=getTotalCost(a);
+    const profit=a.sold?getProfit(a):'';
+    rows.push([
+      a.name, a.breed||'', a.gender||'', batch?batch.name:'',
+      a.purchaseDate||'', a.purchasePrice||0, expTotal, cost,
+      a.sold?'Sold':'Active', a.saleDate||'', a.salePrice||'', profit, a.buyer||''
+    ]);
+  });
+  rows.push([]);
+
+  // Section 2: All Individual Expenses
+  rows.push(['ANIMAL EXPENSES (DETAILED)']);
+  rows.push(['Animal Name','Type','Amount','Date','Description','Is Shared']);
+  animals.forEach(a=>{
+    (a.expenses||[]).forEach(e=>{
+      rows.push([a.name, e.type, e.amount, e.date||'', e.desc||'', e.isShared?'Yes':'No']);
+    });
+  });
+  rows.push([]);
+
+  // Section 3: Farm Expenses
+  rows.push(['FARM EXPENSES (NOT DIVIDED AMONG ANIMALS)']);
+  rows.push(['Type','Amount','Date','Description']);
+  farmExpenses.forEach(e=>{
+    rows.push([e.type, e.amount, e.date||'', e.desc||'']);
+  });
+  rows.push([]);
+
+  // Section 4: Weight Logs
+  rows.push(['WEIGHT RECORDS']);
+  rows.push(['Animal Name','Weight (kg)','Date','Note']);
+  animals.forEach(a=>{
+    (a.weightLog||[]).forEach(w=>{
+      rows.push([a.name, w.weight, w.date||'', w.note||'']);
+    });
+  });
+  rows.push([]);
+
+  // Section 5: Overall Summary
+  const sold=animals.filter(a=>a.sold);
+  const tc=animals.reduce((s,a)=>s+getTotalCost(a),0);
+  const tr=sold.reduce((s,a)=>s+(a.salePrice||0),0);
+  const np=sold.reduce((s,a)=>s+getProfit(a),0);
+  const farmTotal=farmExpenses.reduce((s,e)=>s+e.amount,0);
+  rows.push(['OVERALL SUMMARY']);
+  rows.push(['Total Animals', animals.length]);
+  rows.push(['Active Animals', animals.filter(a=>!a.sold).length]);
+  rows.push(['Sold Animals', sold.length]);
+  rows.push(['Total Cost (All Animals)', tc]);
+  rows.push(['Total Revenue (Sold)', tr]);
+  rows.push(['Net P/L from Animals', np]);
+  rows.push(['Farm Expenses', farmTotal]);
+  rows.push(['Final Net Profit/Loss', np-farmTotal]);
+
+  const csvContent = rows.map(row=>row.map(csvEscape).join(',')).join('\n');
+  const blob = new Blob(['\ufeff'+csvContent], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'Mewat_Cattle_Report_'+td()+'.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  toast('✓ Report downloaded');
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 populateBatchDropdown('fBatch','');
+document.body.classList.add('tone-animals');
 renderAnimals();
+
+// Fix: ensure all date inputs allow full year range (2015-2035) so the native
+// calendar picker's year selector isn't restricted to a narrow window
+function fixDateInputRanges(){
+  document.querySelectorAll('input[type="date"]').forEach(inp=>{
+    if(!inp.hasAttribute('min')) inp.setAttribute('min','2015-01-01');
+    if(!inp.hasAttribute('max')) inp.setAttribute('max','2035-12-31');
+  });
+}
+fixDateInputRanges();
+// Re-apply whenever new sheets/forms render dynamically (expense rows, sheets etc.)
+const _dateRangeObserver = new MutationObserver(()=>fixDateInputRanges());
+_dateRangeObserver.observe(document.body, {childList:true, subtree:true});
 </script>
 </body>
 </html>
