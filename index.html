@@ -248,7 +248,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="sheet-overlay" id="farmExpenseSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title">Add Farm Expense</div><button class="btn-icon" onclick="closeSheet('farmExpenseSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div style="background:#E3F2FD;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#1565C0;margin-bottom:14px">This expense stays separate — it will NOT be divided among animals.</div><div class="form-group"><label>Expense Type</label><select id="feType"><option>Electricity</option><option>Labour Salary</option><option>Rent</option><option>Water</option><option>Equipment</option><option>Maintenance</option><option>Other</option></select></div><div class="form-row"><div class="form-group"><label>Amount (Rs.) *</label><input type="number" id="feAmount" placeholder="0" inputmode="numeric"></div><div class="form-group"><label>Date</label><input type="date" id="feDate"></div></div><div class="form-group"><label>Description (optional)</label><input type="text" id="feDesc" placeholder="e.g. Monthly electricity bill..."></div><button class="btn btn-primary btn-full" onclick="saveFarmExpense()">Add Farm Expense</button></div></div></div>
 
-<div class="sheet-overlay" id="collectiveSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title">Add Shared Expense</div><button class="btn-icon" onclick="closeSheet('collectiveSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div class="form-row"><div class="form-group"><label>Total Amount (Rs.) *</label><input type="number" id="ceAmount" placeholder="0" inputmode="numeric" oninput="updateCollectivePreview()"></div><div class="form-group"><label>Date</label><input type="date" id="ceDate"></div></div><div class="form-group"><label>Expense Type</label><select id="ceType"><option>Feed</option><option>Medicine</option><option>Labour</option><option>Veterinary Fee</option><option>Transport</option><option>Other</option></select></div><div class="form-group"><label>Description (optional)</label><input type="text" id="ceDesc" placeholder="e.g. 10 bags feed, vet visit..."></div><div class="form-group"><label>Select Animals to divide among *</label><div id="ceAnimalList" style="background:#F5F7FA;border-radius:var(--radius);padding:10px;max-height:180px;overflow-y:auto;border:1.5px solid #CFD8DC"></div><div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-sm" onclick="selectAllAnimals()">Select All</button><button class="btn btn-sm" onclick="deselectAllAnimals()">Deselect All</button></div></div><div id="collectivePreview" style="margin-bottom:8px"></div><button class="btn btn-primary btn-full" onclick="saveCollectiveExpense()">✓ Save & Divide</button></div></div></div>
+<div class="sheet-overlay" id="collectiveSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title">Add Shared Expense</div><button class="btn-icon" onclick="closeSheet('collectiveSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body">
+<div style="background:#E3F2FD;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#1565C0;margin-bottom:14px">💡 This expense covers a period. It will be divided per-day, per-animal — based on how many days each animal was actually present (even if sold or added mid-period).</div>
+<div class="form-row"><div class="form-group"><label>Total Amount (Rs.) *</label><input type="number" id="ceAmount" placeholder="0" inputmode="numeric" oninput="updateCollectivePreview()"></div><div class="form-group"><label>Expense Type</label><select id="ceType" onchange="updateCollectivePreview()"><option>Feed</option><option>Medicine</option><option>Labour</option><option>Veterinary Fee</option><option>Transport</option><option>Other</option></select></div></div>
+<div class="form-row"><div class="form-group"><label>Period Start Date *</label><input type="date" id="ceStartDate" oninput="updateCollectivePreview()"></div><div class="form-group"><label>Period End Date *</label><input type="date" id="ceEndDate" oninput="updateCollectivePreview()"></div></div>
+<div class="form-group"><label>Description (optional)</label><input type="text" id="ceDesc" placeholder="e.g. October feed stock..."></div>
+<div class="form-group"><label>Select Animals covered by this expense *</label><div id="ceAnimalList" style="background:#F5F7FA;border-radius:var(--radius);padding:10px;max-height:180px;overflow-y:auto;border:1.5px solid #CFD8DC"></div><div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-sm" onclick="selectAllAnimals()">Select All</button><button class="btn btn-sm" onclick="deselectAllAnimals()">Deselect All</button></div></div>
+<div id="collectivePreview" style="margin-bottom:8px"></div>
+<button class="btn btn-primary btn-full" onclick="saveCollectiveExpense()">✓ Save & Divide by Days</button></div></div></div>
 
 <!-- Confirm Modal -->
 <div class="sheet-overlay" id="confirmModal"><div class="sheet" style="border-radius:16px 16px 0 0"><div style="padding:24px 20px 8px"><div style="font-size:18px;font-weight:700;margin-bottom:8px;color:#1A237E" id="confirmTitle">Are you sure?</div><div style="font-size:14px;color:#546E7A;line-height:1.5" id="confirmMsg"></div></div><div style="padding:16px 20px 28px;display:flex;flex-direction:column;gap:8px"><button id="confirmOkBtn" class="btn btn-full" style="font-size:15px;padding:13px">Confirm</button><button onclick="closeConfirm()" class="btn btn-full" style="font-size:15px;padding:13px">Cancel</button></div></div></div>
@@ -590,11 +597,104 @@ function openCarryForward(animalId){ carryAnimalId=animalId; const a=animals.fin
 function confirmCarryForward(){ const a=animals.find(x=>x.id===carryAnimalId); const toBId=document.getElementById('carryToBatch').value; const toB=batches.find(x=>x.id===toBId); if(!a||!toB)return; if(!a.batchHistory)a.batchHistory=[]; a.batchHistory.push({fromBatch:a.batchId||null,fromBatchName:a.batchId&&getBatchById(a.batchId)?getBatchById(a.batchId).name:'No Batch',toBatch:toBId,toBatchName:toB.name,movedOn:td()}); a.batchId=toBId; sv(); closeSheet('carrySheet'); toast(`✓ ${a.name} → ${toB.name}`); renderBatches(); }
 
 // ── COLLECTIVE EXPENSE ─────────────────────────────────────────────────────
-function openCollectiveExpense(){ document.getElementById('ceAmount').value=''; document.getElementById('ceDesc').value=''; document.getElementById('ceDate').value=td(); document.getElementById('ceType').value='Feed'; document.getElementById('collectivePreview').innerHTML=''; const active=animals.filter(a=>!a.sold); const list=document.getElementById('ceAnimalList'); list.innerHTML=active.length?active.map(a=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E0E7EF;cursor:pointer"><input type="checkbox" class="ce-animal-check" value="${a.id}" checked style="width:18px;height:18px;accent-color:#1D9E75" onchange="updateCollectivePreview()"><span style="font-size:14px;font-weight:600">${a.name}</span><span style="font-size:12px;color:#546E7A;margin-left:auto">${a.breed||''}</span></label>`).join(''):'<div style="color:#546E7A;font-size:13px">No active animals.</div>'; openSheet('collectiveSheet'); setTimeout(()=>document.getElementById('ceAmount').focus(),300); }
 function selectAllAnimals(){ document.querySelectorAll('.ce-animal-check').forEach(c=>c.checked=true); updateCollectivePreview(); }
 function deselectAllAnimals(){ document.querySelectorAll('.ce-animal-check').forEach(c=>c.checked=false); updateCollectivePreview(); }
-function updateCollectivePreview(){ const total=parseFloat(document.getElementById('ceAmount').value)||0; const sel=[...document.querySelectorAll('.ce-animal-check:checked')].map(c=>c.value); const el=document.getElementById('collectivePreview'); if(!total||!sel.length){el.innerHTML='';return;} const per=total/sel.length; el.innerHTML=`<div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Total Amount</span><span style="font-weight:700">${fmt(total)}</span></div><div class="summary-row"><span style="color:#546E7A">Animals selected</span><span style="font-weight:700">${sel.length}</span></div><div class="summary-row total"><span>Per Animal</span><span style="color:#0F6E56">${fmt(per)}</span></div></div>`; }
-function saveCollectiveExpense(){ const total=parseFloat(document.getElementById('ceAmount').value)||0; const sel=[...document.querySelectorAll('.ce-animal-check:checked')].map(c=>c.value); const type=document.getElementById('ceType').value; const desc=document.getElementById('ceDesc').value; const date=document.getElementById('ceDate').value; if(!total){showAlert('Enter amount.');return;} if(!sel.length){showAlert('Select at least one animal.');return;} const per=Math.round(total/sel.length); const bId=gId(); sel.forEach(id=>{ const a=animals.find(x=>x.id===id); if(a){if(!a.expenses)a.expenses=[]; a.expenses.push({id:gId(),batchId:bId,type,amount:per,date,desc:desc?desc+' (Shared: '+fmt(total)+'÷'+sel.length+')':'Shared: '+fmt(total)+'÷'+sel.length,isShared:true,totalShared:total,sharedCount:sel.length});}}); sv(); closeSheet('collectiveSheet'); toast(`✓ ${fmt(total)} divided among ${sel.length} animals`); renderCollective(); }
+
+function openCollectiveExpense(){
+  document.getElementById('ceAmount').value='';
+  document.getElementById('ceDesc').value='';
+  document.getElementById('ceStartDate').value=td();
+  document.getElementById('ceEndDate').value=td();
+  document.getElementById('ceType').value='Feed';
+  document.getElementById('collectivePreview').innerHTML='';
+  const list=document.getElementById('ceAnimalList');
+  // Show ALL animals (active + sold) since sold animals may have been present during the period
+  list.innerHTML=animals.length?animals.map(a=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E0E7EF;cursor:pointer"><input type="checkbox" class="ce-animal-check" value="${a.id}" checked style="width:18px;height:18px;accent-color:#1D9E75" onchange="updateCollectivePreview()"><span style="font-size:14px;font-weight:600">${a.name}</span><span style="font-size:11px;color:#546E7A;margin-left:auto">${a.sold?'Sold '+a.saleDate:'Active'}</span></label>`).join(''):'<div style="color:#546E7A;font-size:13px">No animals.</div>';
+  openSheet('collectiveSheet');
+  setTimeout(()=>document.getElementById('ceAmount').focus(),300);
+}
+
+// Calculate how many days an animal was present within [periodStart, periodEnd]
+function daysPresentInPeriod(animal, periodStart, periodEnd){
+  const pStart = new Date(periodStart);
+  const pEnd = new Date(periodEnd);
+  const animalStart = animal.purchaseDate ? new Date(animal.purchaseDate) : pStart;
+  const animalEnd = animal.sold && animal.saleDate ? new Date(animal.saleDate) : pEnd;
+  // Overlap between [animalStart, animalEnd] and [pStart, pEnd]
+  const overlapStart = animalStart > pStart ? animalStart : pStart;
+  const overlapEnd = animalEnd < pEnd ? animalEnd : pEnd;
+  const days = Math.floor((overlapEnd - overlapStart) / 864e5) + 1; // inclusive
+  return Math.max(0, days);
+}
+
+function updateCollectivePreview(){
+  const total=parseFloat(document.getElementById('ceAmount').value)||0;
+  const startDate=document.getElementById('ceStartDate').value;
+  const endDate=document.getElementById('ceEndDate').value;
+  const sel=[...document.querySelectorAll('.ce-animal-check:checked')].map(c=>c.value);
+  const el=document.getElementById('collectivePreview');
+  if(!total||!sel.length||!startDate||!endDate){el.innerHTML='';return;}
+
+  const totalPeriodDays = Math.floor((new Date(endDate)-new Date(startDate))/864e5)+1;
+  if(totalPeriodDays<=0){el.innerHTML='<div style="color:#C62828;font-size:13px">End date must be after start date.</div>';return;}
+
+  const selectedAnimals = sel.map(id=>animals.find(a=>a.id===id)).filter(Boolean);
+  // Calculate animal-days for each selected animal
+  const animalDays = selectedAnimals.map(a=>({a, days:daysPresentInPeriod(a,startDate,endDate)}));
+  const totalAnimalDays = animalDays.reduce((s,x)=>s+x.days,0);
+  if(totalAnimalDays<=0){el.innerHTML='<div style="color:#C62828;font-size:13px">No animals were present during this period.</div>';return;}
+
+  const perDayRate = total/totalAnimalDays;
+  const preview = animalDays.filter(x=>x.days>0).slice(0,5).map(x=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span>${x.a.name} (${x.days}d)</span><span style="font-weight:600">${fmt(perDayRate*x.days)}</span></div>`).join('');
+
+  el.innerHTML=`<div class="summary-box">
+    <div class="summary-row"><span style="color:#546E7A">Total Amount</span><span style="font-weight:700">${fmt(total)}</span></div>
+    <div class="summary-row"><span style="color:#546E7A">Period</span><span style="font-weight:700">${totalPeriodDays} days</span></div>
+    <div class="summary-row"><span style="color:#546E7A">Total Animal-Days</span><span style="font-weight:700">${totalAnimalDays}</span></div>
+    <div class="summary-row total"><span>Rate per Animal/Day</span><span style="color:#0F6E56">${fmt(perDayRate)}</span></div>
+    <div style="margin-top:8px;padding-top:8px;border-top:1px solid #B2DFDB">${preview}${animalDays.length>5?`<div style="font-size:11px;color:#546E7A;margin-top:4px">+${animalDays.length-5} more...</div>`:''}</div>
+  </div>`;
+}
+
+function saveCollectiveExpense(){
+  const total=parseFloat(document.getElementById('ceAmount').value)||0;
+  const startDate=document.getElementById('ceStartDate').value;
+  const endDate=document.getElementById('ceEndDate').value;
+  const sel=[...document.querySelectorAll('.ce-animal-check:checked')].map(c=>c.value);
+  const type=document.getElementById('ceType').value;
+  const desc=document.getElementById('ceDesc').value;
+  if(!total){showAlert('Enter amount.');return;}
+  if(!startDate||!endDate){showAlert('Select start and end date.');return;}
+  if(!sel.length){showAlert('Select at least one animal.');return;}
+
+  const totalPeriodDays = Math.floor((new Date(endDate)-new Date(startDate))/864e5)+1;
+  if(totalPeriodDays<=0){showAlert('End date must be after start date.');return;}
+
+  const selectedAnimals = sel.map(id=>animals.find(a=>a.id===id)).filter(Boolean);
+  const animalDays = selectedAnimals.map(a=>({a, days:daysPresentInPeriod(a,startDate,endDate)}));
+  const totalAnimalDays = animalDays.reduce((s,x)=>s+x.days,0);
+  if(totalAnimalDays<=0){showAlert('No animals were present during this period.');return;}
+
+  const perDayRate = total/totalAnimalDays;
+  const bId=gId();
+  let appliedCount=0;
+  animalDays.forEach(({a,days})=>{
+    if(days<=0) return;
+    const share = Math.round(perDayRate*days);
+    if(!a.expenses)a.expenses=[];
+    a.expenses.push({
+      id:gId(), batchId:bId, type, amount:share,
+      date:endDate,
+      desc:(desc?desc+' — ':'')+`Shared (${days}d of ${totalPeriodDays}d period, ${fmt(total)} total)`,
+      isShared:true, totalShared:total, sharedCount:appliedCount+1,
+      periodStart:startDate, periodEnd:endDate, daysPresent:days
+    });
+    appliedCount++;
+  });
+  sv(); closeSheet('collectiveSheet');
+  toast(`✓ ${fmt(total)} divided by days among ${appliedCount} animals`);
+  renderCollective();
+}
 
 // ── RENDER METRICS ─────────────────────────────────────────────────────────
 function renderMetrics(){
@@ -778,10 +878,15 @@ function renderCollective(){
     return;
   }
 
-  if(!unique.length){el.innerHTML=tabsHTML+`<div class="card" style="text-align:center;padding:20px"><div style="font-size:32px;margin-bottom:8px">🤝</div><div style="font-weight:700;margin-bottom:6px">No Shared Expenses</div><div style="font-size:13px;color:#546E7A;margin-bottom:16px">When an expense is shared across multiple animals — add it here</div><button class="btn btn-primary" onclick="openCollectiveExpense()">+ Add Shared Expense</button></div>`;return;}
+  if(!unique.length){el.innerHTML=tabsHTML+`<div class="card" style="text-align:center;padding:20px"><div style="font-size:32px;margin-bottom:8px">🤝</div><div style="font-weight:700;margin-bottom:6px">No Shared Expenses</div><div style="font-size:13px;color:#546E7A;margin-bottom:16px">Period-based expenses (feed, medicine) divided by days each animal was present</div><button class="btn btn-primary" onclick="openCollectiveExpense()">+ Add Shared Expense</button></div>`;return;}
   el.innerHTML=tabsHTML+`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><div style="font-size:16px;font-weight:700">Shared Expenses</div><div style="font-size:12px;color:#546E7A">Total: ${fmt(total)} — ${unique.length} entries</div></div><button class="btn btn-primary btn-sm" onclick="openCollectiveExpense()">+ Add</button></div>
-  <div style="background:#FFF8E1;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#E65100;margin-bottom:12px">💡 These expenses are automatically added to each animal's Total Cost</div>
-  ${unique.map(e=>`<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="flex:1"><div style="font-weight:700;font-size:15px">${fmt(e.totalShared)} <span style="font-size:12px;font-weight:400;color:#546E7A">— ${e.type}</span></div><div style="font-size:12px;color:#546E7A;margin-top:3px">${e.date||'—'} ${e.desc?'• '+e.desc:''}</div><div style="margin-top:8px;padding:8px 10px;background:#F0F4F8;border-radius:8px"><div style="font-size:11px;color:#546E7A;margin-bottom:4px">DIVIDED AMONG ${e.sharedCount} ANIMALS</div><div style="font-size:13px;font-weight:600;color:#0F6E56">Per animal: ${fmt(e.totalShared/e.sharedCount)}</div></div></div></div></div>`).join('')}`;
+  <div style="background:#FFF8E1;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#E65100;margin-bottom:12px">💡 Divided per-day based on how long each animal was present — sold/new animals get a fair share automatically</div>
+  ${unique.map(e=>{
+    const groupExpenses = animals.flatMap(a=>(a.expenses||[]).filter(x=>x.batchId===e.batchId));
+    const animalCount = groupExpenses.length;
+    const periodDays = e.periodStart && e.periodEnd ? Math.floor((new Date(e.periodEnd)-new Date(e.periodStart))/864e5)+1 : null;
+    return `<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="flex:1"><div style="font-weight:700;font-size:15px">${fmt(e.totalShared)} <span style="font-size:12px;font-weight:400;color:#546E7A">— ${e.type}</span></div><div style="font-size:12px;color:#546E7A;margin-top:3px">${e.periodStart||'—'} → ${e.periodEnd||'—'} ${periodDays?'('+periodDays+' days)':''} ${e.desc?'• '+e.desc.split(' — ')[0]:''}</div><div style="margin-top:8px;padding:8px 10px;background:#F0F4F8;border-radius:8px"><div style="font-size:11px;color:#546E7A;margin-bottom:4px">SPLIT AMONG ${animalCount} ANIMALS — BY DAYS PRESENT</div><div style="font-size:12px;color:#546E7A">Each animal charged for actual days present in this period</div></div></div><button class="btn-icon btn-danger" onclick="deleteSharedExpense('${e.batchId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div></div>`;
+  }).join('')}`;
 }
 
 let _collectiveTab='shared';
@@ -813,6 +918,15 @@ function deleteFarmExpense(id){
   showConfirm('Delete Expense','This farm expense will be permanently deleted.','Delete','danger',()=>{
     farmExpenses=farmExpenses.filter(e=>e.id!==id);
     sv(); toast('✓ Deleted'); renderCollective();
+  });
+}
+
+function deleteSharedExpense(batchId){
+  showConfirm('Delete Shared Expense','This expense will be removed from ALL animals it was divided among.','Delete','danger',()=>{
+    animals.forEach(a=>{
+      if(a.expenses) a.expenses = a.expenses.filter(e=>e.batchId!==batchId);
+    });
+    sv(); toast('✓ Shared expense deleted'); renderCollective();
   });
 }
 
