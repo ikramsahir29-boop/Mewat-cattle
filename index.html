@@ -262,7 +262,7 @@ body.tone-report{background:linear-gradient(180deg,#E9F3EF 0%,#ABC4B7 220px)}
 <button class="btn btn-primary btn-full" onclick="saveCollectiveExpense()">✓ Save & Divide by Days</button></div></div></div>
 
 <!-- Confirm Modal -->
-<div class="sheet-overlay" id="confirmModal"><div class="sheet" style="border-radius:16px 16px 0 0"><div style="padding:24px 20px 8px"><div style="font-size:18px;font-weight:700;margin-bottom:8px;color:#1A237E" id="confirmTitle">Are you sure?</div><div style="font-size:14px;color:#546E7A;line-height:1.5" id="confirmMsg"></div></div><div style="padding:16px 20px 28px;display:flex;flex-direction:column;gap:8px"><button id="confirmOkBtn" class="btn btn-full" style="font-size:15px;padding:13px">Confirm</button><button onclick="closeConfirm()" class="btn btn-full" style="font-size:15px;padding:13px">Cancel</button></div></div></div>
+<div class="sheet-overlay" id="confirmModal"><div class="sheet" style="border-radius:16px 16px 0 0"><div style="padding:24px 20px 8px"><div style="font-size:18px;font-weight:700;margin-bottom:8px;color:#1A237E" id="confirmTitle">Are you sure?</div><div style="font-size:14px;color:#546E7A;line-height:1.5;white-space:pre-line" id="confirmMsg"></div></div><div style="padding:16px 20px 28px;display:flex;flex-direction:column;gap:8px"><button id="confirmOkBtn" class="btn btn-full" style="font-size:15px;padding:13px">Confirm</button><button onclick="closeConfirm()" class="btn btn-full" style="font-size:15px;padding:13px">Cancel</button></div></div></div>
 
 <!-- Alert Modal -->
 <div class="sheet-overlay" id="alertModal"><div class="sheet" style="border-radius:16px 16px 0 0"><div style="padding:24px 20px 8px"><div style="font-size:16px;font-weight:600;line-height:1.5;color:#263238" id="alertMsg"></div></div><div style="padding:12px 20px 28px"><button onclick="closeAlert()" class="btn btn-primary btn-full" style="font-size:15px;padding:13px">OK</button></div></div></div>
@@ -775,6 +775,21 @@ function saveCollectiveExpense(){
   const totalPeriodDays = Math.floor((new Date(endDate)-new Date(startDate))/864e5)+1;
   if(totalPeriodDays<=0){showAlert('End date must be after start date.');return;}
 
+  // Safeguard: warn if Period End Date is in the future. Active animals would then be
+  // charged for days that haven't actually happened yet — even if sold before that date.
+  if(endDate > td()){
+    showConfirm(
+      'Period End is in the future',
+      `Your Period End Date (${endDate}) is after today (${td()}). Active animals will be charged feed cost all the way up to that future date — including days that haven't happened yet. If you sell an animal before then, its cost will still include feed it hasn't actually eaten yet.\n\nSafer option: set Period End to today, and add a new entry later once you know the real end date.\n\nContinue anyway with this future date?`,
+      'Continue Anyway','danger',
+      ()=>proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,totalPeriodDays)
+    );
+    return;
+  }
+  proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,totalPeriodDays);
+}
+
+function proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,totalPeriodDays){
   const selectedAnimals = sel.map(id=>animals.find(a=>a.id===id)).filter(Boolean);
   const animalDays = selectedAnimals.map(a=>({a, days:daysPresentInPeriod(a,startDate,endDate)}));
   const totalAnimalDays = animalDays.reduce((s,x)=>s+x.days,0);
