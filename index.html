@@ -252,7 +252,7 @@ body.tone-report{background:linear-gradient(180deg,#E9F3EF 0%,#ABC4B7 220px)}
 
 <div class="sheet-overlay" id="farmExpenseSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title">Add Farm Expense</div><button class="btn-icon" onclick="closeSheet('farmExpenseSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div style="background:#E3F2FD;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#1565C0;margin-bottom:14px">This expense stays separate — it will NOT be divided among animals.</div><div class="form-group"><label>Expense Type</label><select id="feType"><option>Electricity</option><option>Labour Salary</option><option>Rent</option><option>Water</option><option>Equipment</option><option>Maintenance</option><option>Other</option></select></div><div class="form-row"><div class="form-group"><label>Amount (Rs.) *</label><input type="number" id="feAmount" placeholder="0" inputmode="numeric"></div><div class="form-group"><label>Date</label><input type="date" id="feDate"></div></div><div class="form-group"><label>Description (optional)</label><input type="text" id="feDesc" placeholder="e.g. Monthly electricity bill..."></div><button class="btn btn-primary btn-full" onclick="saveFarmExpense()">Add Farm Expense</button></div></div></div>
 
-<div class="sheet-overlay" id="collectiveSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title">Add Shared Expense</div><button class="btn-icon" onclick="closeSheet('collectiveSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body">
+<div class="sheet-overlay" id="collectiveSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title" id="collectiveSheetTitle">Add Shared Expense</div><button class="btn-icon" onclick="closeSheet('collectiveSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body">
 <div style="background:#E3F2FD;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#1565C0;margin-bottom:14px">💡 This expense covers a period. It will be divided per-day, per-animal — based on how many days each animal was actually present (even if sold or added mid-period).</div>
 <div class="form-row"><div class="form-group"><label>Total Amount (Rs.) *</label><input type="number" id="ceAmount" placeholder="0" inputmode="numeric" oninput="updateCollectivePreview()"></div><div class="form-group"><label>Expense Type</label><select id="ceType" onchange="updateCollectivePreview()"><option>Feed</option><option>Medicine</option><option>Labour</option><option>Veterinary Fee</option><option>Transport</option><option>Other</option></select></div></div>
 <div class="form-row"><div class="form-group"><label>Period Start Date *</label><input type="date" id="ceStartDate" oninput="updateCollectivePreview()"></div><div class="form-group"><label>Period End Date *</label><input type="date" id="ceEndDate" oninput="updateCollectivePreview()"></div></div>
@@ -669,6 +669,8 @@ function deselectAllAnimals(){
 }
 
 function openCollectiveExpense(){
+  editingSharedBatchId = null;
+  document.getElementById('collectiveSheetTitle').textContent='Add Shared Expense';
   document.getElementById('ceAmount').value='';
   document.getElementById('ceDesc').value='';
   document.getElementById('ceStartDate').value=td();
@@ -680,6 +682,33 @@ function openCollectiveExpense(){
   list.innerHTML=animals.length?animals.map(a=>`<label class="ce-check-label" data-animal-id="${a.id}" onclick="toggleAnimalCheck(this, event)" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E0E7EF;cursor:pointer;user-select:none"><span class="ce-checkbox-visual" data-checked="true" style="width:22px;height:22px;border-radius:6px;border:2px solid #1D9E75;background:#1D9E75;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0">✓</span><input type="checkbox" class="ce-animal-check" value="${a.id}" checked style="display:none"><span style="font-size:14px;font-weight:600">${a.name}</span><span style="font-size:11px;color:#546E7A;margin-left:auto">${a.sold?'Sold '+a.saleDate:'Active'}</span></label>`).join(''):'<div style="color:#546E7A;font-size:13px">No animals.</div>';
   openSheet('collectiveSheet');
   setTimeout(()=>document.getElementById('ceAmount').focus(),300);
+}
+
+// Open the Shared Expense sheet pre-filled with an existing entry's data, for editing.
+let editingSharedBatchId = null;
+function editSharedExpense(batchId){
+  const sample = animals.flatMap(a=>(a.expenses||[]).filter(e=>e.batchId===batchId))[0];
+  if(!sample){ showAlert('Could not find this shared expense.'); return; }
+  editingSharedBatchId = batchId;
+  document.getElementById('collectiveSheetTitle').textContent='Edit Shared Expense';
+  document.getElementById('ceAmount').value = sample.totalShared;
+  document.getElementById('ceType').value = sample.type;
+  document.getElementById('ceStartDate').value = sample.periodStart||'';
+  document.getElementById('ceEndDate').value = sample.periodEnd||'';
+  let desc = sample.desc||'';
+  const idx = desc.indexOf(' — Shared (');
+  document.getElementById('ceDesc').value = idx>-1 ? desc.slice(0, idx) : desc;
+  document.getElementById('collectivePreview').innerHTML='';
+
+  const includedIds = new Set(animals.filter(a=>(a.expenses||[]).some(e=>e.batchId===batchId)).map(a=>a.id));
+  const list=document.getElementById('ceAnimalList');
+  list.innerHTML=animals.length?animals.map(a=>{
+    const checked = includedIds.has(a.id);
+    return `<label class="ce-check-label" data-animal-id="${a.id}" onclick="toggleAnimalCheck(this, event)" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E0E7EF;cursor:pointer;user-select:none"><span class="ce-checkbox-visual" data-checked="${checked}" style="width:22px;height:22px;border-radius:6px;border:2px solid #1D9E75;background:${checked?'#1D9E75':'#fff'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0">${checked?'✓':''}</span><input type="checkbox" class="ce-animal-check" value="${a.id}" ${checked?'checked':''} style="display:none"><span style="font-size:14px;font-weight:600">${a.name}</span><span style="font-size:11px;color:#546E7A;margin-left:auto">${a.sold?'Sold '+a.saleDate:'Active'}</span></label>`;
+  }).join(''):'<div style="color:#546E7A;font-size:13px">No animals.</div>';
+
+  openSheet('collectiveSheet');
+  updateCollectivePreview();
 }
 
 // Calculate how many days an animal was present within [periodStart, periodEnd]
@@ -751,8 +780,13 @@ function saveCollectiveExpense(){
   const totalAnimalDays = animalDays.reduce((s,x)=>s+x.days,0);
   if(totalAnimalDays<=0){showAlert('No animals were present during this period.');return;}
 
+  // If editing an existing shared expense, first strip its old entries from every animal
+  if(editingSharedBatchId){
+    animals.forEach(a=>{ if(a.expenses) a.expenses = a.expenses.filter(e=>e.batchId!==editingSharedBatchId); });
+  }
+
   const perDayRate = total/totalAnimalDays;
-  const bId=gId();
+  const bId = editingSharedBatchId || gId();
   let appliedCount=0;
   animalDays.forEach(({a,days})=>{
     if(days<=0) return;
@@ -768,14 +802,14 @@ function saveCollectiveExpense(){
     appliedCount++;
   });
   sv(); closeSheet('collectiveSheet');
-  toast(`✓ ${fmt(total)} divided by days among ${appliedCount} animals`);
+  toast(editingSharedBatchId?`✓ Shared expense updated — divided among ${appliedCount} animals`:`✓ ${fmt(total)} divided by days among ${appliedCount} animals`);
+  editingSharedBatchId = null;
   renderCollective();
 }
 
 // ── RENDER METRICS ─────────────────────────────────────────────────────────
-let _metricsFilter = 'all'; // 'all' | 'active' | 'sold'
-
-function setMetricsFilter(f){ _metricsFilter = f; renderMetrics(); }
+// NOTE: metrics now use the SAME filter as the Animals list (currentFilter) below,
+// so "Sold" / "Active" / "All" stays in sync between the metric cards and the list.
 
 function renderMetrics(){
   const total=animals.length,sold=animals.filter(a=>a.sold),active=animals.filter(a=>!a.sold);
@@ -783,34 +817,35 @@ function renderMetrics(){
 
   // Determine which animal set to use for purchase/expense based on filter
   let scopeAnimals;
-  if(_metricsFilter==='active') scopeAnimals = active;
-  else if(_metricsFilter==='sold') scopeAnimals = sold;
+  if(currentFilter==='active') scopeAnimals = active;
+  else if(currentFilter==='sold') scopeAnimals = sold;
   else scopeAnimals = animals;
 
   const tp=scopeAnimals.reduce((s,a)=>s+a.purchasePrice,0);
   const te=scopeAnimals.reduce((s,a)=>s+(a.expenses||[]).reduce((x,e)=>x+e.amount,0),0);
-  // Farm expense only counted in 'all' or 'sold' view (overall business), not in pure 'active' capital view
-  const combinedExpense = _metricsFilter==='active' ? te : te+farmTotal;
+  // Farm expense (general overhead, not tied to any specific animal) is only counted
+  // in the overall "All" view. When filtering to just Active or just Sold animals,
+  // only the per-animal expenses for that scope are shown — farm cost is excluded.
+  const combinedExpense = currentFilter==='all' ? te+farmTotal : te;
   const profit=sold.reduce((s,a)=>s+getProfit(a),0)-farmTotal;
 
-  const toggleHTML = `<div class="tabs" style="margin-bottom:10px">
-    <button class="tab-btn ${_metricsFilter==='all'?'active':''}" onclick="setMetricsFilter('all')">All</button>
-    <button class="tab-btn ${_metricsFilter==='active'?'active':''}" onclick="setMetricsFilter('active')">Active Only</button>
-    <button class="tab-btn ${_metricsFilter==='sold'?'active':''}" onclick="setMetricsFilter('sold')">Sold Only</button>
-  </div>`;
+  const purchaseLabel = currentFilter==='active' ? '💰 Purchase (Active)' : currentFilter==='sold' ? '💰 Purchase (Sold)' : '💰 Purchase';
+  const expenseLabel = currentFilter==='active' ? '🧾 Expense (Active)' : currentFilter==='sold' ? '🧾 Expense (Sold)' : '🧾 Expense';
+  const costLabel = currentFilter==='active' ? 'Capital Locked' : 'Total Cost';
 
-  const purchaseLabel = _metricsFilter==='active' ? '💰 Purchase (Active)' : _metricsFilter==='sold' ? '💰 Purchase (Sold)' : '💰 Purchase';
-  const expenseLabel = _metricsFilter==='active' ? '🧾 Expense (Active)' : _metricsFilter==='sold' ? '🧾 Expense (Sold)' : '🧾 Expense';
-  const costLabel = _metricsFilter==='active' ? 'Capital Locked' : 'Total Cost';
+  // Total weight of animals in current scope (sum of each animal's latest recorded weight)
+  const totalWeight = scopeAnimals.reduce((s,a)=>{ const lw=getLastW(a); return s+(lw?lw.weight:0); },0);
+  const weightLabel = currentFilter==='active' ? '⚖️ Total Weight (Active)' : currentFilter==='sold' ? '⚖️ Total Weight (Sold)' : '⚖️ Total Weight';
 
-  document.getElementById('metricsArea').innerHTML= toggleHTML + `
+  document.getElementById('metricsArea').innerHTML = `
     <div class="metric" style="background:linear-gradient(135deg,#E8EAF6,#fff);border-left:3px solid #5C6BC0"><div class="metric-label" style="color:#3949AB">Total Animals</div><div class="metric-value">${total}</div></div>
     <div class="metric" style="background:linear-gradient(135deg,#E8F5E9,#fff);border-left:3px solid #66BB6A"><div class="metric-label" style="color:#2E7D32">Active</div><div class="metric-value" style="color:#2E7D32">${active.length}</div></div>
     <div class="metric" style="background:linear-gradient(135deg,#F5F5F5,#fff);border-left:3px solid #9E9E9E"><div class="metric-label" style="color:#616161">Sold</div><div class="metric-value" style="color:#616161">${sold.length}</div></div>
     <div class="metric" style="background:linear-gradient(135deg,#FFF8E1,#fff);border-left:3px solid #FFA726"><div class="metric-label" style="color:#E65100">${purchaseLabel}</div><div class="metric-value" style="font-size:14px;color:#E65100">${fmtShort(tp)}</div></div>
-    <div class="metric" style="background:linear-gradient(135deg,#FFEBEE,#fff);border-left:3px solid #EF5350"><div class="metric-label" style="color:#B71C1C">${expenseLabel}</div><div class="metric-value" style="font-size:14px;color:#C62828">${fmtShort(combinedExpense)}</div>${farmTotal>0&&_metricsFilter!=='active'?`<div style="font-size:9px;color:#B71C1C;margin-top:2px">incl. ${fmtShort(farmTotal)} farm</div>`:''}</div>
-    ${_metricsFilter!=='active'?`<div class="metric" style="background:linear-gradient(135deg,#E0F2F1,#fff);border-left:3px solid #26A69A"><div class="metric-label" style="color:#004D40">Net P/L (Sold)</div><div class="metric-value ${profit>=0?'green':'red'}" style="font-size:14px">${(profit>0?'+':'')+fmtShort(profit)}</div></div>`:''}
-    <div class="metric" style="background:linear-gradient(135deg,#EDE7F6,#fff);border-left:3px solid #7E57C2"><div class="metric-label" style="color:#4527A0">${costLabel}</div><div class="metric-value" style="font-size:14px;color:#4527A0">${fmtShort(tp+combinedExpense)}</div></div>`;
+    <div class="metric" style="background:linear-gradient(135deg,#FFEBEE,#fff);border-left:3px solid #EF5350"><div class="metric-label" style="color:#B71C1C">${expenseLabel}</div><div class="metric-value" style="font-size:14px;color:#C62828">${fmtShort(combinedExpense)}</div>${farmTotal>0&&currentFilter==='all'?`<div style="font-size:9px;color:#B71C1C;margin-top:2px">incl. ${fmtShort(farmTotal)} farm</div>`:''}</div>
+    ${currentFilter!=='active'?`<div class="metric" style="background:linear-gradient(135deg,#E0F2F1,#fff);border-left:3px solid #26A69A"><div class="metric-label" style="color:#004D40">Net P/L (Sold)</div><div class="metric-value ${profit>=0?'green':'red'}" style="font-size:14px">${(profit>0?'+':'')+fmtShort(profit)}</div></div>`:''}
+    <div class="metric" style="background:linear-gradient(135deg,#EDE7F6,#fff);border-left:3px solid #7E57C2"><div class="metric-label" style="color:#4527A0">${costLabel}</div><div class="metric-value" style="font-size:14px;color:#4527A0">${fmtShort(tp+combinedExpense)}</div></div>
+    <div class="metric" style="background:linear-gradient(135deg,#E0F7FA,#fff);border-left:3px solid #26C6DA"><div class="metric-label" style="color:#006064">${weightLabel}</div><div class="metric-value" style="font-size:14px;color:#006064">${Math.round(totalWeight).toLocaleString('en-PK')} kg</div></div>`;
   document.getElementById('headerSub').textContent=total+' animals • '+active.length+' active';
 }
 
@@ -842,7 +877,7 @@ function renderAnimals(){
         </div>
         <div id="ctab-purchase-${a.id}" style="display:flex;justify-content:space-between;align-items:center">
           <div><div style="font-size:11px;color:#546E7A;margin-bottom:2px">Purchase Price</div><div style="font-size:17px;font-weight:700">${fmt(a.purchasePrice)}</div><div style="font-size:11px;color:#546E7A;margin-top:3px">${a.purchaseDate||'—'}</div></div>
-          <div style="text-align:right">${a.sold?`<div style="font-size:11px;color:#546E7A;margin-bottom:2px">Profit / Loss</div><div class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</div><div style="font-size:10px;color:#90A4AE;margin-top:2px">Sold: ${a.saleDate||'—'}</div>`:`<div style="font-size:11px;color:#546E7A;margin-bottom:2px">Since Purchase</div><div style="font-size:14px;font-weight:700">${days!==null?days+' days':'—'}</div>`}</div>
+          <div style="text-align:right">${a.sold?`<div style="font-size:11px;color:#546E7A;margin-bottom:2px">Sale Price</div><div style="font-size:17px;font-weight:700">${fmt(a.salePrice)}</div><div style="font-size:12px;margin-top:2px" class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</div>`:`<div style="font-size:11px;color:#546E7A;margin-bottom:2px">Since Purchase</div><div style="font-size:14px;font-weight:700">${days!==null?days+' days':'—'}</div>`}</div>
         </div>
         <div id="ctab-expense-${a.id}" style="display:none">
           <div style="display:flex;justify-content:space-between;align-items:center">
@@ -857,10 +892,10 @@ function renderAnimals(){
   const tRows=list.map(a=>{
     const cost=getTotalCost(a),expTotal=(a.expenses||[]).reduce((s,e)=>s+e.amount,0),profit=getProfit(a),days=daysAgo(a.purchaseDate),lw=getLastW(a),gain=getTotalGain(a),rate=getGrowthRate(a);
     const batch=a.batchId&&getBatchById(a.batchId);
-    return `<tr onclick="openDetail('${a.id}')" style="cursor:pointer"><td><strong>${a.name}</strong><br><small style="color:#546E7A">${a.breed||'—'}</small>${batch?`<br><span style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);color:#1B5E20;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px">📦 ${batch.name}</span>`:''}</td><td>${lw?lw.weight+' kg':'—'}${gain!==null?`<br><small class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)}kg</small>`:''}</td><td>${rate!==null?(rate*30).toFixed(1)+' kg/mo':'—'}</td><td>${fmt(a.purchasePrice)}</td><td>${fmt(expTotal)}</td><td><strong>${fmt(cost)}</strong></td><td>${a.sold?`<span class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</span><br><small style="color:#90A4AE">Sold: ${a.saleDate||'—'}</small>`:`<span style="color:#546E7A">${days!==null?days+' days':'—'}</span>`}</td><td><span class="badge ${a.sold?'badge-sold':'badge-active'}">${a.sold?'Sold':'Active'}</span></td></tr>`;
+    return `<tr onclick="openDetail('${a.id}')" style="cursor:pointer"><td><strong>${a.name}</strong><br><small style="color:#546E7A">${a.breed||'—'}</small>${batch?`<br><span style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);color:#1B5E20;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px">📦 ${batch.name}</span>`:''}</td><td>${lw?lw.weight+' kg':'—'}${gain!==null?`<br><small class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)}kg</small>`:''}</td><td>${rate!==null?(rate*30).toFixed(1)+' kg/mo':'—'}</td><td>${fmt(a.purchasePrice)}</td><td>${fmt(expTotal)}</td><td><strong>${fmt(cost)}</strong></td><td>${a.sold?`<strong>${fmt(a.salePrice)}</strong><br><small class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</small>`:`<span style="color:#546E7A">${days!==null?days+' days':'—'}</span>`}</td><td><span class="badge ${a.sold?'badge-sold':'badge-active'}">${a.sold?'Sold':'Active'}</span></td></tr>`;
   }).join('');
 
-  el.innerHTML=`<div class="mobile-only">${mobileCards}</div><div class="desktop-only card" style="padding:0;overflow:hidden"><table class="desktop-table"><thead><tr><th>Name</th><th>Weight</th><th>Growth/Mo</th><th>Purchase</th><th>Expense</th><th>Total Cost</th><th>Profit/Loss</th><th>Status</th></tr></thead><tbody>${tRows}</tbody></table></div>`;
+  el.innerHTML=`<div class="mobile-only">${mobileCards}</div><div class="desktop-only card" style="padding:0;overflow:hidden"><table class="desktop-table"><thead><tr><th>Name</th><th>Weight</th><th>Growth/Mo</th><th>Purchase</th><th>Expense</th><th>Total Cost</th><th>Sale Price / P&L</th><th>Status</th></tr></thead><tbody>${tRows}</tbody></table></div>`;
 }
 
 function switchCardTab(btn,tab,id){
@@ -985,7 +1020,7 @@ function renderCollective(){
     const groupExpenses = animals.flatMap(a=>(a.expenses||[]).filter(x=>x.batchId===e.batchId));
     const animalCount = groupExpenses.length;
     const periodDays = e.periodStart && e.periodEnd ? Math.floor((new Date(e.periodEnd)-new Date(e.periodStart))/864e5)+1 : null;
-    return `<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="flex:1"><div style="font-weight:700;font-size:15px">${fmt(e.totalShared)} <span style="font-size:12px;font-weight:400;color:#546E7A">— ${e.type}</span></div><div style="font-size:12px;color:#546E7A;margin-top:3px">${e.periodStart||'—'} → ${e.periodEnd||'—'} ${periodDays?'('+periodDays+' days)':''} ${e.desc?'• '+e.desc.split(' — ')[0]:''}</div><div style="margin-top:8px;padding:8px 10px;background:#F0F4F8;border-radius:8px"><div style="font-size:11px;color:#546E7A;margin-bottom:4px">SPLIT AMONG ${animalCount} ANIMALS — BY DAYS PRESENT</div><div style="font-size:12px;color:#546E7A">Each animal charged for actual days present in this period</div></div></div><button class="btn-icon btn-danger" onclick="deleteSharedExpense('${e.batchId}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div></div>`;
+    return `<div class="card" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="flex:1"><div style="font-weight:700;font-size:15px">${fmt(e.totalShared)} <span style="font-size:12px;font-weight:400;color:#546E7A">— ${e.type}</span></div><div style="font-size:12px;color:#546E7A;margin-top:3px">${e.periodStart||'—'} → ${e.periodEnd||'—'} ${periodDays?'('+periodDays+' days)':''} ${e.desc?'• '+e.desc.split(' — ')[0]:''}</div><div style="margin-top:8px;padding:8px 10px;background:#F0F4F8;border-radius:8px"><div style="font-size:11px;color:#546E7A;margin-bottom:4px">SPLIT AMONG ${animalCount} ANIMALS — BY DAYS PRESENT</div><div style="font-size:12px;color:#546E7A">Each animal charged for actual days present in this period</div></div></div><div style="display:flex;flex-direction:column;gap:4px"><button class="btn-icon" onclick="editSharedExpense('${e.batchId}')" title="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="btn-icon btn-danger" onclick="deleteSharedExpense('${e.batchId}')" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div></div></div>`;
   }).join('')}`;
 }
 
