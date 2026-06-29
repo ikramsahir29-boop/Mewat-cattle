@@ -837,13 +837,18 @@ function renderMetrics(){
   const totalWeight = scopeAnimals.reduce((s,a)=>{ const lw=getLastW(a); return s+(lw?lw.weight:0); },0);
   const weightLabel = currentFilter==='active' ? '⚖️ Total Weight (Active)' : currentFilter==='sold' ? '⚖️ Total Weight (Sold)' : '⚖️ Total Weight';
 
+  // Total sale revenue — always computed from ALL sold animals (not scope-dependent),
+  // shown whenever the view isn't "Active only" — gives a quick total of money received from sales.
+  const totalSaleRevenue = sold.reduce((s,a)=>s+(a.salePrice||0),0);
+
   document.getElementById('metricsArea').innerHTML = `
     <div class="metric" style="background:linear-gradient(135deg,#E8EAF6,#fff);border-left:3px solid #5C6BC0"><div class="metric-label" style="color:#3949AB">Total Animals</div><div class="metric-value">${total}</div></div>
     <div class="metric" style="background:linear-gradient(135deg,#E8F5E9,#fff);border-left:3px solid #66BB6A"><div class="metric-label" style="color:#2E7D32">Active</div><div class="metric-value" style="color:#2E7D32">${active.length}</div></div>
     <div class="metric" style="background:linear-gradient(135deg,#F5F5F5,#fff);border-left:3px solid #9E9E9E"><div class="metric-label" style="color:#616161">Sold</div><div class="metric-value" style="color:#616161">${sold.length}</div></div>
     <div class="metric" style="background:linear-gradient(135deg,#FFF8E1,#fff);border-left:3px solid #FFA726"><div class="metric-label" style="color:#E65100">${purchaseLabel}</div><div class="metric-value" style="font-size:14px;color:#E65100">${fmtShort(tp)}</div></div>
     <div class="metric" style="background:linear-gradient(135deg,#FFEBEE,#fff);border-left:3px solid #EF5350"><div class="metric-label" style="color:#B71C1C">${expenseLabel}</div><div class="metric-value" style="font-size:14px;color:#C62828">${fmtShort(combinedExpense)}</div>${farmTotal>0&&currentFilter==='all'?`<div style="font-size:9px;color:#B71C1C;margin-top:2px">incl. ${fmtShort(farmTotal)} farm</div>`:''}</div>
-    ${currentFilter!=='active'?`<div class="metric" style="background:linear-gradient(135deg,#E0F2F1,#fff);border-left:3px solid #26A69A"><div class="metric-label" style="color:#004D40">Net P/L (Sold)</div><div class="metric-value ${profit>=0?'green':'red'}" style="font-size:14px">${(profit>0?'+':'')+fmtShort(profit)}</div></div>`:''}
+    ${currentFilter!=='active'?`<div class="metric" style="background:linear-gradient(135deg,#E0F7E9,#fff);border-left:3px solid #43A047"><div class="metric-label" style="color:#1B5E20">💵 Total Sale Revenue</div><div class="metric-value green" style="font-size:14px">${fmtShort(totalSaleRevenue)}</div></div>`:''}
+    ${currentFilter!=='active'?`<div class="metric" style="background:linear-gradient(135deg,#E0F2F1,#fff);border-left:3px solid #26A69A"><div class="metric-label" style="color:#004D40">Net P/L (Sold)</div><div class="metric-value ${profit>=0?'green':'red'}" style="font-size:14px">${(profit>0?'+':'')+fmtShort(profit)}</div>${farmTotal>0?`<div style="font-size:9px;color:#B71C1C;margin-top:2px">incl. -${fmtShort(farmTotal)} farm</div>`:''}</div>`:''}
     <div class="metric" style="background:linear-gradient(135deg,#EDE7F6,#fff);border-left:3px solid #7E57C2"><div class="metric-label" style="color:#4527A0">${costLabel}</div><div class="metric-value" style="font-size:14px;color:#4527A0">${fmtShort(tp+combinedExpense)}</div></div>
     <div class="metric" style="background:linear-gradient(135deg,#E0F7FA,#fff);border-left:3px solid #26C6DA"><div class="metric-label" style="color:#006064">${weightLabel}</div><div class="metric-value" style="font-size:14px;color:#006064">${Math.round(totalWeight).toLocaleString('en-PK')} kg</div></div>`;
   document.getElementById('headerSub').textContent=total+' animals • '+active.length+' active';
