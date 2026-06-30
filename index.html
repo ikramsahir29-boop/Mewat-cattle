@@ -254,7 +254,18 @@ body.tone-report{background:linear-gradient(180deg,#E9F3EF 0%,#ABC4B7 220px)}
 
 <div class="sheet-overlay" id="collectiveSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title" id="collectiveSheetTitle">Add Shared Expense</div><button class="btn-icon" onclick="closeSheet('collectiveSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body">
 <div style="background:#E3F2FD;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#1565C0;margin-bottom:14px">💡 This expense covers a period. It will be divided per-day, per-animal — based on how many days each animal was actually present (even if sold or added mid-period).</div>
-<div class="form-row"><div class="form-group"><label>Total Amount (Rs.) *</label><input type="number" id="ceAmount" placeholder="0" inputmode="numeric" oninput="updateCollectivePreview()"></div><div class="form-group"><label>Expense Type</label><select id="ceType" onchange="updateCollectivePreview()"><option>Feed</option><option>Medicine</option><option>Labour</option><option>Veterinary Fee</option><option>Transport</option><option>Other</option></select></div></div>
+<div class="tabs" style="margin-bottom:14px">
+  <button type="button" class="tab-btn active" id="ceModeBtnTotal" onclick="setCeMode('total')">Enter Total Amount</button>
+  <button type="button" class="tab-btn" id="ceModeBtnDaily" onclick="setCeMode('daily')">Enter Daily Rate</button>
+</div>
+<div id="ceTotalModeFields">
+  <div class="form-group"><label>Total Amount (Rs.) *</label><input type="number" id="ceAmount" placeholder="0" inputmode="numeric" oninput="updateCollectivePreview()"></div>
+</div>
+<div id="ceDailyModeFields" style="display:none">
+  <div class="form-group"><label>Daily Rate per Animal (Rs./day) *</label><input type="number" id="ceDailyRate" placeholder="e.g. 25" inputmode="decimal" oninput="updateCollectivePreview()"></div>
+  <div style="background:#FFF8E1;border-radius:var(--radius);padding:8px 12px;font-size:12px;color:#E65100;margin-bottom:12px">Total amount will be calculated automatically as: Rate × number of days each animal was present.</div>
+</div>
+<div class="form-group"><label>Expense Type</label><select id="ceType" onchange="updateCollectivePreview()"><option>Feed</option><option>Medicine</option><option>Labour</option><option>Veterinary Fee</option><option>Transport</option><option>Other</option></select></div>
 <div class="form-row"><div class="form-group"><label>Period Start Date *</label><input type="date" id="ceStartDate" oninput="updateCollectivePreview()"></div><div class="form-group"><label>Period End Date *</label><input type="date" id="ceEndDate" oninput="updateCollectivePreview()"></div></div>
 <div class="form-group"><label>Description (optional)</label><input type="text" id="ceDesc" placeholder="e.g. October feed stock..."></div>
 <div class="form-group"><label>Select Animals covered by this expense *</label><div id="ceAnimalList" style="background:#F5F7FA;border-radius:var(--radius);padding:10px;max-height:180px;overflow-y:auto;border:1.5px solid #CFD8DC"></div><div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-sm" onclick="selectAllAnimals()">Select All</button><button class="btn btn-sm" onclick="deselectAllAnimals()">Deselect All</button></div></div>
@@ -668,10 +679,23 @@ function deselectAllAnimals(){
   updateCollectivePreview();
 }
 
+// ── SHARED EXPENSE ENTRY MODE (Total Amount vs Daily Rate) ──────────────────
+let ceMode = 'total'; // 'total' | 'daily'
+function setCeMode(mode){
+  ceMode = mode;
+  document.getElementById('ceModeBtnTotal').classList.toggle('active', mode==='total');
+  document.getElementById('ceModeBtnDaily').classList.toggle('active', mode==='daily');
+  document.getElementById('ceTotalModeFields').style.display = mode==='total' ? 'block':'none';
+  document.getElementById('ceDailyModeFields').style.display = mode==='daily' ? 'block':'none';
+  updateCollectivePreview();
+}
+
 function openCollectiveExpense(){
   editingSharedBatchId = null;
+  setCeMode('total');
   document.getElementById('collectiveSheetTitle').textContent='Add Shared Expense';
   document.getElementById('ceAmount').value='';
+  document.getElementById('ceDailyRate').value='';
   document.getElementById('ceDesc').value='';
   document.getElementById('ceStartDate').value=td();
   document.getElementById('ceEndDate').value=td();
@@ -690,6 +714,7 @@ function editSharedExpense(batchId){
   const sample = animals.flatMap(a=>(a.expenses||[]).filter(e=>e.batchId===batchId))[0];
   if(!sample){ showAlert('Could not find this shared expense.'); return; }
   editingSharedBatchId = batchId;
+  setCeMode('total');
   document.getElementById('collectiveSheetTitle').textContent='Edit Shared Expense';
   document.getElementById('ceAmount').value = sample.totalShared;
   document.getElementById('ceType').value = sample.type;
@@ -733,12 +758,19 @@ function daysPresentInPeriod(animal, periodStart, periodEnd){
 }
 
 function updateCollectivePreview(){
-  const total=parseFloat(document.getElementById('ceAmount').value)||0;
   const startDate=document.getElementById('ceStartDate').value;
   const endDate=document.getElementById('ceEndDate').value;
   const sel=[...document.querySelectorAll('.ce-animal-check:checked')].map(c=>c.value);
   const el=document.getElementById('collectivePreview');
-  if(!total||!sel.length||!startDate||!endDate){el.innerHTML='';return;}
+
+  let total;
+  const dailyRate = parseFloat(document.getElementById('ceDailyRate').value)||0;
+  if(ceMode==='daily'){
+    if(!dailyRate||!sel.length||!startDate||!endDate){el.innerHTML='';return;}
+  } else {
+    total=parseFloat(document.getElementById('ceAmount').value)||0;
+    if(!total||!sel.length||!startDate||!endDate){el.innerHTML='';return;}
+  }
 
   const totalPeriodDays = Math.floor((new Date(endDate)-new Date(startDate))/864e5)+1;
   if(totalPeriodDays<=0){el.innerHTML='<div style="color:#C62828;font-size:13px">End date must be after start date.</div>';return;}
@@ -749,11 +781,18 @@ function updateCollectivePreview(){
   const totalAnimalDays = animalDays.reduce((s,x)=>s+x.days,0);
   if(totalAnimalDays<=0){el.innerHTML='<div style="color:#C62828;font-size:13px">No animals were present during this period.</div>';return;}
 
-  const perDayRate = total/totalAnimalDays;
+  let perDayRate;
+  if(ceMode==='daily'){
+    perDayRate = dailyRate;
+    total = perDayRate * totalAnimalDays;
+  } else {
+    perDayRate = total/totalAnimalDays;
+  }
+
   const preview = animalDays.slice(0,6).map(x=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span>${x.a.name} (${x.days}d)${x.days===0?' <span style="color:#C62828">- not in period</span>':''}</span><span style="font-weight:600">${fmt(perDayRate*x.days)}</span></div>`).join('');
 
   el.innerHTML=`<div class="summary-box">
-    <div class="summary-row"><span style="color:#546E7A">Total Amount</span><span style="font-weight:700">${fmt(total)}</span></div>
+    <div class="summary-row"><span style="color:#546E7A">${ceMode==='daily'?'Calculated Total Amount':'Total Amount'}</span><span style="font-weight:700">${fmt(total)}</span></div>
     <div class="summary-row"><span style="color:#546E7A">Period</span><span style="font-weight:700">${totalPeriodDays} days</span></div>
     <div class="summary-row"><span style="color:#546E7A">Total Animal-Days</span><span style="font-weight:700">${totalAnimalDays}</span></div>
     <div class="summary-row total"><span>Rate per Animal/Day</span><span style="color:#0F6E56">${fmt(perDayRate)}</span></div>
@@ -762,34 +801,45 @@ function updateCollectivePreview(){
 }
 
 function saveCollectiveExpense(){
-  const total=parseFloat(document.getElementById('ceAmount').value)||0;
   const startDate=document.getElementById('ceStartDate').value;
   const endDate=document.getElementById('ceEndDate').value;
   const sel=[...document.querySelectorAll('.ce-animal-check:checked')].map(c=>c.value);
   const type=document.getElementById('ceType').value;
   const desc=document.getElementById('ceDesc').value;
-  if(!total){showAlert('Enter amount.');return;}
+  const dailyRate=parseFloat(document.getElementById('ceDailyRate').value)||0;
+  let total=parseFloat(document.getElementById('ceAmount').value)||0;
+
+  if(ceMode==='daily'){
+    if(!dailyRate){showAlert('Enter daily rate per animal.');return;}
+  } else {
+    if(!total){showAlert('Enter amount.');return;}
+  }
   if(!startDate||!endDate){showAlert('Select start and end date.');return;}
   if(!sel.length){showAlert('Select at least one animal.');return;}
 
   const totalPeriodDays = Math.floor((new Date(endDate)-new Date(startDate))/864e5)+1;
   if(totalPeriodDays<=0){showAlert('End date must be after start date.');return;}
 
+  // In daily-rate mode, the total is computed from rate × animal-days, so it isn't
+  // known until animal-days are calculated. Pass a flag through to proceedSave so it
+  // can finish the calculation there.
+  const useDailyRate = ceMode==='daily';
+
   // Safeguard: warn if Period End Date is in the future. Active animals would then be
   // charged for days that haven't actually happened yet — even if sold before that date.
   if(endDate > td()){
     showConfirm(
       'Period End is in the future',
-      `Your Period End Date (${endDate}) is after today (${td()}). Active animals will be charged feed cost all the way up to that future date — including days that haven't happened yet. If you sell an animal before then, its cost will still include feed it hasn't actually eaten yet.\n\nSafer option: set Period End to today, and add a new entry later once you know the real end date.\n\nContinue anyway with this future date?`,
+      `Your Period End Date (${endDate}) is after today (${td()}). Active animals will be charged cost all the way up to that future date — including days that haven't happened yet. If you sell an animal before then, its cost will still include cost it hasn't actually incurred yet.\n\nSafer option: set Period End to today, and add a new entry later once you know the real end date.\n\nContinue anyway with this future date?`,
       'Continue Anyway','danger',
-      ()=>proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,totalPeriodDays)
+      ()=>proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,totalPeriodDays,useDailyRate,dailyRate)
     );
     return;
   }
-  proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,totalPeriodDays);
+  proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,totalPeriodDays,useDailyRate,dailyRate);
 }
 
-function proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,totalPeriodDays){
+function proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,totalPeriodDays,useDailyRate,dailyRate){
   const selectedAnimals = sel.map(id=>animals.find(a=>a.id===id)).filter(Boolean);
   const animalDays = selectedAnimals.map(a=>({a, days:daysPresentInPeriod(a,startDate,endDate)}));
   const totalAnimalDays = animalDays.reduce((s,x)=>s+x.days,0);
@@ -800,7 +850,14 @@ function proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,tota
     animals.forEach(a=>{ if(a.expenses) a.expenses = a.expenses.filter(e=>e.batchId!==editingSharedBatchId); });
   }
 
-  const perDayRate = total/totalAnimalDays;
+  let perDayRate;
+  if(useDailyRate){
+    perDayRate = dailyRate;
+    total = perDayRate * totalAnimalDays; // finalize total now that animal-days is known
+  } else {
+    perDayRate = total/totalAnimalDays;
+  }
+
   const bId = editingSharedBatchId || gId();
   let appliedCount=0;
   animalDays.forEach(({a,days})=>{
@@ -810,7 +867,7 @@ function proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,tota
     a.expenses.push({
       id:gId(), batchId:bId, type, amount:share,
       date:endDate,
-      desc:(desc?desc+' — ':'')+`Shared (${days}d of ${totalPeriodDays}d period, ${fmt(total)} total)`,
+      desc:(desc?desc+' — ':'')+`Shared (${days}d of ${totalPeriodDays}d period, ${fmt(total)} total${useDailyRate?`, Rs.${dailyRate}/day rate`:''})`,
       isShared:true, totalShared:total, sharedCount:appliedCount+1,
       periodStart:startDate, periodEnd:endDate, daysPresent:days
     });
