@@ -268,7 +268,13 @@ body.tone-report{background:linear-gradient(180deg,#E9F3EF 0%,#ABC4B7 220px)}
 <div class="form-group"><label>Expense Type</label><select id="ceType" onchange="updateCollectivePreview()"><option>Feed</option><option>Medicine</option><option>Labour</option><option>Veterinary Fee</option><option>Transport</option><option>Other</option></select></div>
 <div class="form-row"><div class="form-group"><label>Period Start Date *</label><input type="date" id="ceStartDate" oninput="updateCollectivePreview()"></div><div class="form-group"><label>Period End Date *</label><input type="date" id="ceEndDate" oninput="updateCollectivePreview()"></div></div>
 <div class="form-group"><label>Description (optional)</label><input type="text" id="ceDesc" placeholder="e.g. October feed stock..."></div>
-<div class="form-group"><label>Select Animals covered by this expense *</label><div id="ceAnimalList" style="background:#F5F7FA;border-radius:var(--radius);padding:10px;max-height:180px;overflow-y:auto;border:1.5px solid #CFD8DC"></div><div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-sm" onclick="selectAllAnimals()">Select All</button><button class="btn btn-sm" onclick="deselectAllAnimals()">Deselect All</button></div></div>
+<div class="form-group"><label>Select Animals covered by this expense *</label>
+<div class="tabs" style="margin-bottom:8px">
+  <button type="button" class="tab-btn active" id="ceListFilterBtn-all" onclick="setCeListFilter('all')">Total (All)</button>
+  <button type="button" class="tab-btn" id="ceListFilterBtn-active" onclick="setCeListFilter('active')">Active Only</button>
+  <button type="button" class="tab-btn" id="ceListFilterBtn-sold" onclick="setCeListFilter('sold')">Sold Only</button>
+</div>
+<div id="ceAnimalList" style="background:#F5F7FA;border-radius:var(--radius);padding:10px;max-height:180px;overflow-y:auto;border:1.5px solid #CFD8DC"></div><div style="display:flex;gap:8px;margin-top:6px"><button class="btn btn-sm" onclick="selectAllAnimals()">Select All</button><button class="btn btn-sm" onclick="deselectAllAnimals()">Deselect All</button></div></div>
 <div id="collectivePreview" style="margin-bottom:8px"></div>
 <button class="btn btn-primary btn-full" onclick="saveCollectiveExpense()">✓ Save & Divide by Days</button></div></div></div>
 
@@ -641,10 +647,51 @@ function saveBatch(){ const name=document.getElementById('bName').value.trim(); 
 function closeBatch(bId){ const b=batches.find(x=>x.id===bId); if(!b)return; const s=getBatchStats(bId); if(s.activeCount>0){showConfirm('Close Batch?',s.activeCount+' animals still active. Close anyway?','Close','danger',()=>doCloseBatch(bId));}else doCloseBatch(bId); }
 function doCloseBatch(bId){ const b=batches.find(x=>x.id===bId); if(!b)return; b.status='closed'; b.closedAt=td(); sv(); toast('✓ Batch closed'); renderBatches(); }
 function reopenBatch(bId){ const b=batches.find(x=>x.id===bId); if(!b)return; b.status='active'; delete b.closedAt; sv(); toast('✓ Batch reopened'); renderBatches(); }
+function deleteBatch(bId){
+  const b=batches.find(x=>x.id===bId); if(!b)return;
+  const linked = animals.filter(a=>a.batchId===bId);
+  const msg = linked.length
+    ? `This batch will be permanently deleted. ${linked.length} animal(s) currently in this batch will be unassigned (their full purchase/expense/sale records stay intact, they just won't belong to a batch anymore). This cannot be undone.`
+    : `This batch will be permanently deleted. This cannot be undone.`;
+  showConfirm('Delete Batch?', msg, 'Delete','danger',()=>{
+    // Unassign animals rather than deleting them — their cost/profit history must be preserved
+    animals.forEach(a=>{ if(a.batchId===bId) a.batchId=null; });
+    batches = batches.filter(x=>x.id!==bId);
+    sv(); toast('✓ Batch deleted'); renderBatches();
+  });
+}
 function openCarryForward(animalId){ carryAnimalId=animalId; const a=animals.find(x=>x.id===animalId); const others=batches.filter(b=>b.status!=='closed'&&b.id!==a.batchId); if(!others.length){showAlert('No other active batch. Create a new batch first.');return;} document.getElementById('carryAnimalInfo').innerHTML=`<div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Animal</span><span><strong>${a.name}</strong></span></div><div class="summary-row"><span style="color:#546E7A">Current Batch</span><span>${a.batchId&&getBatchById(a.batchId)?getBatchById(a.batchId).name:'No Batch'}</span></div><div class="summary-row"><span style="color:#546E7A">Total Cost So Far</span><span>${fmt(getTotalCost(a))}</span></div></div>`; const sel=document.getElementById('carryToBatch'); sel.innerHTML=others.map(b=>`<option value="${b.id}">${b.name}</option>`).join(''); openSheet('carrySheet'); }
 function confirmCarryForward(){ const a=animals.find(x=>x.id===carryAnimalId); const toBId=document.getElementById('carryToBatch').value; const toB=batches.find(x=>x.id===toBId); if(!a||!toB)return; if(!a.batchHistory)a.batchHistory=[]; a.batchHistory.push({fromBatch:a.batchId||null,fromBatchName:a.batchId&&getBatchById(a.batchId)?getBatchById(a.batchId).name:'No Batch',toBatch:toBId,toBatchName:toB.name,movedOn:td()}); a.batchId=toBId; sv(); closeSheet('carrySheet'); toast(`✓ ${a.name} → ${toB.name}`); renderBatches(); }
 
 // ── COLLECTIVE EXPENSE ─────────────────────────────────────────────────────
+// ── SHARED EXPENSE — ANIMAL LIST FILTER (All / Active / Sold) ───────────────
+let ceListFilter = 'all'; // 'all' | 'active' | 'sold'
+
+function setCeListFilter(f){
+  ceListFilter = f;
+  ['all','active','sold'].forEach(k=>{
+    const btn=document.getElementById('ceListFilterBtn-'+k);
+    if(btn) btn.classList.toggle('active', k===f);
+  });
+  ceRenderAnimalList();
+}
+
+// Renders the animal checklist for the Shared Expense sheet, filtered by ceListFilter.
+// Preserves whichever checkboxes are already checked in the DOM before re-rendering,
+// so switching between All/Active/Sold tabs doesn't lose existing selections.
+function ceRenderAnimalList(){
+  const list=document.getElementById('ceAnimalList'); if(!list) return;
+  const prevChecked = new Set([...document.querySelectorAll('.ce-animal-check:checked')].map(c=>c.value));
+  let pool = animals;
+  if(ceListFilter==='active') pool = animals.filter(a=>!a.sold);
+  else if(ceListFilter==='sold') pool = animals.filter(a=>a.sold);
+
+  list.innerHTML = pool.length ? pool.map(a=>{
+    const checked = prevChecked.has(a.id);
+    return `<label class="ce-check-label" data-animal-id="${a.id}" onclick="toggleAnimalCheck(this, event)" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E0E7EF;cursor:pointer;user-select:none"><span class="ce-checkbox-visual" data-checked="${checked}" style="width:22px;height:22px;border-radius:6px;border:2px solid #1D9E75;background:${checked?'#1D9E75':'#fff'};display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0">${checked?'✓':''}</span><input type="checkbox" class="ce-animal-check" value="${a.id}" ${checked?'checked':''} style="display:none"><span style="font-size:14px;font-weight:600">${a.name}</span><span style="font-size:11px;color:#546E7A;margin-left:auto">${a.sold?'Sold '+a.saleDate:'Active'}</span></label>`;
+  }).join('') : `<div style="color:#546E7A;font-size:13px">No ${ceListFilter==='all'?'':ceListFilter+' '}animals.</div>`;
+}
+
 function toggleAnimalCheck(label, evt){
   if(evt) evt.preventDefault();
   const checkbox = label.querySelector('.ce-animal-check');
@@ -701,9 +748,11 @@ function openCollectiveExpense(){
   document.getElementById('ceEndDate').value=td();
   document.getElementById('ceType').value='Feed';
   document.getElementById('collectivePreview').innerHTML='';
+  ceListFilter='all';
+  document.querySelectorAll('[id^="ceListFilterBtn-"]').forEach(b=>b.classList.toggle('active', b.id==='ceListFilterBtn-all'));
+  // Render with everything pre-checked (matches old "Select All" default for new entries)
   const list=document.getElementById('ceAnimalList');
-  // Show ALL animals (active + sold) since sold animals may have been present during the period
-  list.innerHTML=animals.length?animals.map(a=>`<label class="ce-check-label" data-animal-id="${a.id}" onclick="toggleAnimalCheck(this, event)" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E0E7EF;cursor:pointer;user-select:none"><span class="ce-checkbox-visual" data-checked="true" style="width:22px;height:22px;border-radius:6px;border:2px solid #1D9E75;background:#1D9E75;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0">✓</span><input type="checkbox" class="ce-animal-check" value="${a.id}" checked style="display:none"><span style="font-size:14px;font-weight:600">${a.name}</span><span style="font-size:11px;color:#546E7A;margin-left:auto">${a.sold?'Sold '+a.saleDate:'Active'}</span></label>`).join(''):'<div style="color:#546E7A;font-size:13px">No animals.</div>';
+  list.innerHTML = animals.length ? animals.map(a=>`<label class="ce-check-label" data-animal-id="${a.id}" onclick="toggleAnimalCheck(this, event)" style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E0E7EF;cursor:pointer;user-select:none"><span class="ce-checkbox-visual" data-checked="true" style="width:22px;height:22px;border-radius:6px;border:2px solid #1D9E75;background:#1D9E75;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0">✓</span><input type="checkbox" class="ce-animal-check" value="${a.id}" checked style="display:none"><span style="font-size:14px;font-weight:600">${a.name}</span><span style="font-size:11px;color:#546E7A;margin-left:auto">${a.sold?'Sold '+a.saleDate:'Active'}</span></label>`).join('') : '<div style="color:#546E7A;font-size:13px">No animals.</div>';
   openSheet('collectiveSheet');
   setTimeout(()=>document.getElementById('ceAmount').focus(),300);
 }
@@ -725,6 +774,8 @@ function editSharedExpense(batchId){
   document.getElementById('ceDesc').value = idx>-1 ? desc.slice(0, idx) : desc;
   document.getElementById('collectivePreview').innerHTML='';
 
+  ceListFilter='all';
+  document.querySelectorAll('[id^="ceListFilterBtn-"]').forEach(b=>b.classList.toggle('active', b.id==='ceListFilterBtn-all'));
   const includedIds = new Set(animals.filter(a=>(a.expenses||[]).some(e=>e.batchId===batchId)).map(a=>a.id));
   const list=document.getElementById('ceAnimalList');
   list.innerHTML=animals.length?animals.map(a=>{
@@ -1071,7 +1122,7 @@ function renderBatches(){
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px"><div style="background:#FFF8E1;border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#E65100">Purchase</div><div style="font-size:14px;font-weight:700;margin-top:2px">${fmtShort(s.totalPurchase)}</div></div><div style="background:#FFEBEE;border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#C62828">Expense</div><div style="font-size:14px;font-weight:700;margin-top:2px;color:#E65100">${fmtShort(s.totalExpense)}</div></div><div style="background:${s.netPL>=0?'#E8F5E9':'#FFEBEE'};border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:${s.netPL>=0?'#2E7D32':'#C62828'}">Net P/L</div><div style="font-size:14px;font-weight:700;margin-top:2px;color:${s.netPL>=0?'#0F6E56':'#C62828'}">${s.netPL>=0?'+':''}${fmtShort(s.netPL)}</div></div></div>
     ${s.list.length?`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11px;color:#546E7A;margin-bottom:4px"><span>${s.soldCount} sold / ${s.activeCount} active</span><span>${pc}% complete</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pc}%;background:#1D9E75"></div></div></div>`:''}
     <div style="border-top:1px solid #E0E7EF;padding-top:8px"><div style="font-size:11px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px">Animals</div>${aRows}</div>
-    <div style="display:flex;gap:6px;margin-top:10px">${!isClosed?`<button class="btn btn-sm btn-danger" onclick="closeBatch('${b.id}')">Close Batch</button>`:`<button class="btn btn-sm" onclick="reopenBatch('${b.id}')">Reopen</button>`}</div></div>`;};
+    <div style="display:flex;gap:6px;margin-top:10px">${!isClosed?`<button class="btn btn-sm btn-danger" onclick="closeBatch('${b.id}')">Close Batch</button>`:`<button class="btn btn-sm" onclick="reopenBatch('${b.id}')">Reopen</button>`}<button class="btn btn-sm btn-danger" onclick="deleteBatch('${b.id}')">🗑 Delete Batch</button></div></div>`;};
   el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><div style="font-size:16px;font-weight:700">Batches</div><div style="font-size:12px;color:#546E7A">${active.length} active • ${closed.length} closed</div></div><button class="btn btn-primary btn-sm" onclick="openNewBatch()">+ New Batch</button></div>
   <div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,#E8F5E9,#fff);border-left:4px solid #1D9E75"><div style="font-size:12px;font-weight:700;color:#0F6E56;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Overall — All Batches</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><div style="text-align:center"><div style="font-size:10px;color:#546E7A">Total Purchase</div><div style="font-size:15px;font-weight:700;color:#E65100">${fmtShort(gP)}</div></div><div style="text-align:center"><div style="font-size:10px;color:#546E7A">Total Expense</div><div style="font-size:15px;font-weight:700;color:#C62828">${fmtShort(gE)}</div></div><div style="text-align:center"><div style="font-size:10px;color:#546E7A">Net Profit/Loss</div><div style="font-size:15px;font-weight:700;color:${gPL>=0?'#0F6E56':'#C62828'}">${gPL>=0?'+':''}${fmtShort(gPL)}</div></div></div></div>
   ${active.length?`<div style="font-size:12px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Active Batches</div>${active.map(bCard).join('')}`:''}
