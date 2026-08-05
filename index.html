@@ -387,36 +387,30 @@ async function loadFromCloud(){
     const stampTs = (cloudTs && cloudTs !== 'null') ? cloudTs : Date.now().toString();
     try{ localStorage.setItem('mct_savedAt', stampTs); }catch(e){}
     populateBatchDropdown('fBatch','');
-    renderAnimals();
+    // Re-render whichever page is currently active — not just Animals
+    const activePage = document.querySelector('.page.active');
+    const pageId = activePage ? activePage.id.replace('page-','') : 'animals';
+    if(pageId==='animals') renderAnimals();
+    else if(pageId==='batches') renderBatches();
+    else if(pageId==='collective') renderCollective();
+    else if(pageId==='report') renderReport();
+    else renderAnimals();
     showSyncBar('✅ Synced','#E8F5E9','#2E7D32',true);
   }catch(e){ showSyncBar('⚠️ Failed','#FFEBEE','#C62828',true); }
 }
 
-// AUTO-SYNC on startup — robust version
+// AUTO-SYNC on startup — simplest reliable approach for single-user two-device setup:
+// Always load from cloud on startup if online. Cloud always has the latest saved state
+// (every sv() pushes to cloud), so loading from cloud on startup guarantees both
+// devices always see the same data without any timestamp comparison complexity.
 async function autoSyncOnStartup(){
   if(!navigator.onLine) return;
-  try{
-    // Safely parse local timestamp — handles null, "null", NaN, missing
-    const raw = localStorage.getItem('mct_savedAt');
-    const localTs = (raw && raw !== 'null') ? (parseInt(raw)||0) : 0;
-
-    // If this device has never saved with new code (localTs===0),
-    // ALWAYS load from cloud regardless of cloud timestamp.
-    // This handles the transition period where mobile has cloud data but no savedAt yet.
-    if(localTs === 0){
-      showSyncBar('🔄 Cloud se data sync ho raha hai...','#E3F2FD','#1565C0',false);
-      await loadFromCloud();
-      return;
-    }
-
-    // Both devices have timestamps — load cloud if it's newer
-    const cloudTs = await sbGet('savedAt');
-    const cloudTsNum = (cloudTs && cloudTs !== 'null') ? (parseInt(cloudTs)||0) : 0;
-    if(cloudTsNum > localTs){
-      showSyncBar('🔄 Naya data cloud pe mila — sync ho raha hai...','#E3F2FD','#1565C0',false);
-      await loadFromCloud();
-    }
-  }catch(e){ /* silent — no internet or Supabase issue */ }
+  // If a local save is pending, wait for it to finish first so we don't overwrite it
+  if(_saveTimer){
+    await new Promise(r => setTimeout(r, 1200));
+  }
+  // Now load from cloud — this will get the latest data from whichever device last saved
+  await loadFromCloud();
 }
 
 function showSyncBar(msg,bg,color,autoHide){
@@ -447,8 +441,9 @@ try{ animals = JSON.parse(localStorage.getItem('mct_animals') || '[]'); }catch(e
 try{ batches = JSON.parse(localStorage.getItem('mct_batches') || '[]'); }catch(e){}
 try{ farmExpenses = JSON.parse(localStorage.getItem('mct_farmExpenses') || '[]'); }catch(e){}
 try{ investmentLedger = JSON.parse(localStorage.getItem('mct_investments') || '[]'); }catch(e){}
-// On startup: if local is empty → force load from cloud.
-// Otherwise: check cloud timestamp — if cloud is newer (another device saved more recently) → auto-sync.
+// Always auto-sync from cloud on startup (if online).
+// If local is empty → sync immediately. If local has data → sync after 1s delay
+// (gives time for the page to render first so user sees something instantly).
 if(!animals.length){ setTimeout(loadFromCloud, 500); }
 else { setTimeout(autoSyncOnStartup, 1000); }
 
