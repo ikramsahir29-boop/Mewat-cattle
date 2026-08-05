@@ -215,7 +215,7 @@ body.tone-report{background:linear-gradient(180deg,#E9F3EF 0%,#ABC4B7 220px)}
 
   <div class="page" id="page-batches"><div style="height:12px"></div><div id="batchesContent"></div></div>
   <div class="page" id="page-collective"><div style="height:12px"></div><div id="collectiveContent"></div></div>
-  <div class="page" id="page-report"><div style="height:12px"></div><div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="btn btn-sm" onclick="downloadReportCSV()">⬇️ Download Report (CSV)</button></div><div id="reportContent"></div></div>
+  <div class="page" id="page-report"><div style="height:12px"></div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><button class="btn btn-sm btn-primary" onclick="openInvestmentSheet()">💰 + Investment Entry</button><button class="btn btn-sm" onclick="downloadReportCSV()">⬇️ Download CSV</button></div><div id="reportContent"></div></div>
 </div>
 
 <button class="fab" onclick="openAddAnimal()">+</button>
@@ -375,30 +375,50 @@ async function loadFromCloud(){
   }
   showSyncBar('⏳ Syncing...','#E3F2FD','#1565C0',false);
   try{
-    const [aStr, bStr, fStr, iStr] = await Promise.all([sbGet('animals'), sbGet('batches'), sbGet('farmExpenses'), sbGet('investments')]);
+    const [aStr, bStr, fStr, iStr, cloudTs] = await Promise.all([
+      sbGet('animals'), sbGet('batches'), sbGet('farmExpenses'), sbGet('investments'), sbGet('savedAt')
+    ]);
     if(_saveTimer){ showSyncBar('⏳ Still saving...','#FFF8E1','#E65100',true); return; }
     if(aStr){ animals = JSON.parse(aStr); localStorage.setItem('mct_animals', aStr); }
     if(bStr){ batches = JSON.parse(bStr); localStorage.setItem('mct_batches', bStr); }
     if(fStr){ farmExpenses = JSON.parse(fStr); localStorage.setItem('mct_farmExpenses', fStr); }
     if(iStr){ investmentLedger = JSON.parse(iStr); localStorage.setItem('mct_investments', iStr); }
+    // Stamp local savedAt — use cloud's savedAt if available, otherwise use current time.
+    // This ensures localTs is ALWAYS a valid number after a successful sync,
+    // so future autoSyncOnStartup comparisons work correctly.
+    const stampTs = (cloudTs && cloudTs !== 'null') ? cloudTs : Date.now().toString();
+    try{ localStorage.setItem('mct_savedAt', stampTs); }catch(e){}
     populateBatchDropdown('fBatch','');
     renderAnimals();
     showSyncBar('✅ Synced','#E8F5E9','#2E7D32',true);
   }catch(e){ showSyncBar('⚠️ Failed','#FFEBEE','#C62828',true); }
 }
 
-// AUTO-SYNC on startup: compare cloud timestamp with local — load cloud if newer
+// AUTO-SYNC on startup — robust version
 async function autoSyncOnStartup(){
   if(!navigator.onLine) return;
   try{
-    const cloudTs = await sbGet('savedAt');
-    const localTs = parseInt(localStorage.getItem('mct_savedAt')||'0');
-    if(cloudTs && parseInt(cloudTs) > localTs){
-      showSyncBar('🔄 Newer data found on cloud — loading...','#E3F2FD','#1565C0',false);
+    // Safely parse local timestamp — handles null, "null", NaN, missing
+    const raw = localStorage.getItem('mct_savedAt');
+    const localTs = (raw && raw !== 'null') ? (parseInt(raw)||0) : 0;
+
+    // If this device has never saved with new code (localTs===0),
+    // ALWAYS load from cloud regardless of cloud timestamp.
+    // This handles the transition period where mobile has cloud data but no savedAt yet.
+    if(localTs === 0){
+      showSyncBar('🔄 Cloud se data sync ho raha hai...','#E3F2FD','#1565C0',false);
       await loadFromCloud();
-      showSyncBar('✅ Auto-synced from cloud (newer data detected)','#E8F5E9','#2E7D32',true);
+      return;
     }
-  }catch(e){ /* silent fail — no internet or supabase issue */ }
+
+    // Both devices have timestamps — load cloud if it's newer
+    const cloudTs = await sbGet('savedAt');
+    const cloudTsNum = (cloudTs && cloudTs !== 'null') ? (parseInt(cloudTs)||0) : 0;
+    if(cloudTsNum > localTs){
+      showSyncBar('🔄 Naya data cloud pe mila — sync ho raha hai...','#E3F2FD','#1565C0',false);
+      await loadFromCloud();
+    }
+  }catch(e){ /* silent — no internet or Supabase issue */ }
 }
 
 function showSyncBar(msg,bg,color,autoHide){
