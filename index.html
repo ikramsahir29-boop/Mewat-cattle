@@ -278,6 +278,20 @@ body.tone-report{background:linear-gradient(180deg,#E9F3EF 0%,#ABC4B7 220px)}
 <div id="collectivePreview" style="margin-bottom:8px"></div>
 <button class="btn btn-primary btn-full" onclick="saveCollectiveExpense()">✓ Save & Divide by Days</button></div></div></div>
 
+<!-- Investment Ledger Sheet -->
+<div class="sheet-overlay" id="investmentSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title" id="investmentSheetTitle">Add Investment Entry</div><button class="btn-icon" onclick="closeSheet('investmentSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body">
+<div class="tabs" style="margin-bottom:14px">
+  <button type="button" class="tab-btn active" id="invTypeBtnFresh" onclick="setInvType('fresh')">💵 Fresh Capital</button>
+  <button type="button" class="tab-btn" id="invTypeBtnReinvest" onclick="setInvType('reinvest')">🔄 Reinvested Profit</button>
+  <button type="button" class="tab-btn" id="invTypeBtnPlanned" onclick="setInvType('planned')">📋 Planned</button>
+</div>
+<div id="invTypeDesc" style="background:#E3F2FD;border-radius:var(--radius);padding:8px 12px;font-size:12px;color:#1565C0;margin-bottom:14px"></div>
+<div class="form-row"><div class="form-group"><label>Amount (Rs.) *</label><input type="number" id="invAmount" placeholder="0" inputmode="numeric"></div><div class="form-group"><label>Date *</label><input type="date" id="invDate"></div></div>
+<div class="form-group"><label>Description / Note</label><input type="text" id="invNote" placeholder="e.g. Sold 5 goats, profit reinvested..."></div>
+<div id="invPlannedExtra" style="display:none"><div class="form-row"><div class="form-group"><label>Target / Purpose</label><input type="text" id="invPurpose" placeholder="e.g. Buy 10 Sahiwal calves..."></div><div class="form-group"><label>Expected Date</label><input type="date" id="invExpectedDate"></div></div></div>
+<button class="btn btn-primary btn-full" onclick="saveInvestmentEntry()">✓ Save Entry</button>
+</div></div></div>
+
 <!-- Confirm Modal -->
 <div class="sheet-overlay" id="confirmModal"><div class="sheet" style="border-radius:16px 16px 0 0"><div style="padding:24px 20px 8px"><div style="font-size:18px;font-weight:700;margin-bottom:8px;color:#1A237E" id="confirmTitle">Are you sure?</div><div style="font-size:14px;color:#546E7A;line-height:1.5;white-space:pre-line" id="confirmMsg"></div></div><div style="padding:16px 20px 28px;display:flex;flex-direction:column;gap:8px"><button id="confirmOkBtn" class="btn btn-full" style="font-size:15px;padding:13px">Confirm</button><button onclick="closeConfirm()" class="btn btn-full" style="font-size:15px;padding:13px">Cancel</button></div></div></div>
 
@@ -323,51 +337,68 @@ async function sbSet(key, value){
 
 // SAVE — always save local first, then push to cloud
 function sv(){
+  const savedAt = Date.now();
   // Immediately save to localStorage
   try{ localStorage.setItem('mct_animals', JSON.stringify(animals)); }catch(e){}
   try{ localStorage.setItem('mct_batches', JSON.stringify(batches)); }catch(e){}
   try{ localStorage.setItem('mct_farmExpenses', JSON.stringify(farmExpenses)); }catch(e){}
+  try{ localStorage.setItem('mct_investments', JSON.stringify(investmentLedger)); }catch(e){}
+  try{ localStorage.setItem('mct_savedAt', savedAt.toString()); }catch(e){}
   // Push to cloud after 500ms debounce
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(async () => {
     const aStr = JSON.stringify(animals);
     const bStr = JSON.stringify(batches);
     const fStr = JSON.stringify(farmExpenses);
-    // Save latest state to localStorage again
+    const iStr = JSON.stringify(investmentLedger);
     try{ localStorage.setItem('mct_animals', aStr); }catch(e){}
     try{ localStorage.setItem('mct_batches', bStr); }catch(e){}
     try{ localStorage.setItem('mct_farmExpenses', fStr); }catch(e){}
+    try{ localStorage.setItem('mct_investments', iStr); }catch(e){}
     if(!navigator.onLine){ showSyncBar('💾 Saved locally','#FFF3E0','#E65100',true); _saveTimer=null; return; }
     await sbSet('animals', aStr);
     await sbSet('batches', bStr);
     await sbSet('farmExpenses', fStr);
+    await sbSet('investments', iStr);
+    await sbSet('savedAt', savedAt.toString());
     showSyncBar('✅ Saved & Synced','#E8F5E9','#2E7D32',true);
     _saveTimer = null;
   }, 500);
 }
 
-// LOAD — only when user presses sync button, MERGE don't overwrite
+// LOAD — manual (🔄 button) or auto on startup when cloud is newer
 async function loadFromCloud(){
   if(!navigator.onLine){ showSyncBar('📵 No internet','#FFEBEE','#C62828',true); return; }
-  // If save is pending, wait for it to complete first
   if(_saveTimer){
     showSyncBar('⏳ Saving first...','#FFF8E1','#E65100',false);
     await new Promise(r => setTimeout(r, 800));
   }
   showSyncBar('⏳ Syncing...','#E3F2FD','#1565C0',false);
   try{
-    const [aStr, bStr, fStr] = await Promise.all([sbGet('animals'), sbGet('batches'), sbGet('farmExpenses')]);
-    if(_saveTimer){ 
-      showSyncBar('⏳ Still saving...','#FFF8E1','#E65100',true); 
-      return; 
-    }
+    const [aStr, bStr, fStr, iStr] = await Promise.all([sbGet('animals'), sbGet('batches'), sbGet('farmExpenses'), sbGet('investments')]);
+    if(_saveTimer){ showSyncBar('⏳ Still saving...','#FFF8E1','#E65100',true); return; }
     if(aStr){ animals = JSON.parse(aStr); localStorage.setItem('mct_animals', aStr); }
     if(bStr){ batches = JSON.parse(bStr); localStorage.setItem('mct_batches', bStr); }
     if(fStr){ farmExpenses = JSON.parse(fStr); localStorage.setItem('mct_farmExpenses', fStr); }
+    if(iStr){ investmentLedger = JSON.parse(iStr); localStorage.setItem('mct_investments', iStr); }
     populateBatchDropdown('fBatch','');
     renderAnimals();
     showSyncBar('✅ Synced','#E8F5E9','#2E7D32',true);
   }catch(e){ showSyncBar('⚠️ Failed','#FFEBEE','#C62828',true); }
+}
+
+// AUTO-SYNC on startup: compare cloud timestamp with local — load cloud if newer
+async function autoSyncOnStartup(){
+  if(!navigator.onLine) return;
+  try{
+    const cloudTs = await sbGet('savedAt');
+    const localTs = parseInt(localStorage.getItem('mct_savedAt')||'0');
+    if(cloudTs && parseInt(cloudTs) > localTs){
+      showSyncBar('🔄 Newer data found on cloud — loading...','#E3F2FD','#1565C0',false);
+      await loadFromCloud();
+      showSyncBar('✅ Auto-synced from cloud (newer data detected)','#E8F5E9','#2E7D32',true);
+    }
+  }catch(e){ /* silent fail — no internet or supabase issue */ }
 }
 
 function showSyncBar(msg,bg,color,autoHide){
@@ -386,7 +417,8 @@ window.addEventListener('online', ()=>{ sv(); });
 let animals = [];
 let batches = [];
 let farmExpenses = [];
-let includeFarmInAll = true; // whether farm expense counts toward the "All" view Expense/Cost tiles
+let investmentLedger = [];
+let includeFarmInAll = true;
 try{ const v = localStorage.getItem('mct_includeFarmInAll'); if(v!==null) includeFarmInAll = v==='true'; }catch(e){}
 function toggleIncludeFarmInAll(){
   includeFarmInAll = !includeFarmInAll;
@@ -396,8 +428,11 @@ function toggleIncludeFarmInAll(){
 try{ animals = JSON.parse(localStorage.getItem('mct_animals') || '[]'); }catch(e){}
 try{ batches = JSON.parse(localStorage.getItem('mct_batches') || '[]'); }catch(e){}
 try{ farmExpenses = JSON.parse(localStorage.getItem('mct_farmExpenses') || '[]'); }catch(e){}
-// Auto load from cloud on first open (only if local is empty)
+try{ investmentLedger = JSON.parse(localStorage.getItem('mct_investments') || '[]'); }catch(e){}
+// On startup: if local is empty → force load from cloud.
+// Otherwise: check cloud timestamp — if cloud is newer (another device saved more recently) → auto-sync.
 if(!animals.length){ setTimeout(loadFromCloud, 500); }
+else { setTimeout(autoSyncOnStartup, 1000); }
 
 
 
@@ -937,6 +972,143 @@ function proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,tota
   renderCollective();
 }
 
+// ── INVESTMENT LEDGER ─────────────────────────────────────────────────────
+let _invType = 'fresh';
+const _invTypeDesc = {
+  fresh: '💵 Fresh Capital — paisa jo tumne apni jeb se naya lagaya (pichle sale ka nahi)',
+  reinvest: '🔄 Reinvested Profit — janwar bechne ka jo munafa dobara farm mein lagaya',
+  planned: '📋 Planned Investment — future mein karna chahte ho (estimated amount)'
+};
+function setInvType(t){
+  _invType=t;
+  ['fresh','reinvest','planned'].forEach(k=>{
+    const b=document.getElementById('invTypeBtn'+k.charAt(0).toUpperCase()+k.slice(1));
+    if(b) b.classList.toggle('active',k===t);
+  });
+  const desc=document.getElementById('invTypeDesc'); if(desc) desc.textContent=_invTypeDesc[t]||'';
+  const extra=document.getElementById('invPlannedExtra'); if(extra) extra.style.display=t==='planned'?'block':'none';
+}
+function openInvestmentSheet(editId){
+  _invEditId=editId||null;
+  document.getElementById('investmentSheetTitle').textContent=editId?'Edit Entry':'Add Investment Entry';
+  setInvType('fresh');
+  document.getElementById('invAmount').value='';
+  document.getElementById('invDate').value=td();
+  document.getElementById('invNote').value='';
+  document.getElementById('invPurpose').value='';
+  document.getElementById('invExpectedDate').value='';
+  if(editId){
+    const e=investmentLedger.find(x=>x.id===editId); if(!e)return;
+    setInvType(e.type);
+    document.getElementById('invAmount').value=e.amount||'';
+    document.getElementById('invDate').value=e.date||td();
+    document.getElementById('invNote').value=e.note||'';
+    document.getElementById('invPurpose').value=e.purpose||'';
+    document.getElementById('invExpectedDate').value=e.expectedDate||'';
+  }
+  openSheet('investmentSheet');
+  setTimeout(()=>document.getElementById('invAmount').focus(),300);
+}
+let _invEditId=null;
+function saveInvestmentEntry(){
+  const amount=parseFloat(document.getElementById('invAmount').value)||0;
+  const date=document.getElementById('invDate').value;
+  if(!amount){showAlert('Amount daalo.');return;}
+  if(!date){showAlert('Date select karo.');return;}
+  const entry={
+    id:_invEditId||gId(), type:_invType, amount, date,
+    note:document.getElementById('invNote').value,
+    purpose:document.getElementById('invPurpose').value,
+    expectedDate:document.getElementById('invExpectedDate').value,
+    createdAt:Date.now()
+  };
+  if(_invEditId){ const i=investmentLedger.findIndex(x=>x.id===_invEditId); if(i>-1) investmentLedger[i]=entry; }
+  else investmentLedger.unshift(entry);
+  sv(); closeSheet('investmentSheet');
+  toast(_invEditId?'✓ Entry updated':'✓ Investment entry added');
+  _invEditId=null;
+  if(document.getElementById('page-report').classList.contains('active')) renderReport();
+}
+function deleteInvestmentEntry(id){
+  showConfirm('Delete Entry?','This investment entry will be permanently deleted.','Delete','danger',()=>{
+    investmentLedger=investmentLedger.filter(x=>x.id!==id);
+    sv(); toast('✓ Deleted');
+    if(document.getElementById('page-report').classList.contains('active')) renderReport();
+  });
+}
+function renderInvestmentSection(){
+  const fresh=investmentLedger.filter(e=>e.type==='fresh');
+  const reinvest=investmentLedger.filter(e=>e.type==='reinvest');
+  const planned=investmentLedger.filter(e=>e.type==='planned');
+  const totalFresh=fresh.reduce((s,e)=>s+e.amount,0);
+  const totalReinvest=reinvest.reduce((s,e)=>s+e.amount,0);
+  const totalPlanned=planned.reduce((s,e)=>s+e.amount,0);
+  const totalInvested=totalFresh+totalReinvest;
+  // Auto-compute from animals data
+  const soldAnimals=animals.filter(a=>a.sold);
+  const totalRevenue=soldAnimals.reduce((s,a)=>s+(a.salePrice||0),0);
+  const totalSpent=animals.reduce((s,a)=>s+getTotalCost(a),0);
+  const farmTotal=farmExpenses.reduce((s,e)=>s+e.amount,0);
+  const netPL=totalRevenue-totalSpent-(includeFarmInAll?farmTotal:0);
+  const roi=totalInvested>0?Math.round(netPL/totalInvested*100):0;
+
+  const entryRow=(e,showStatus)=>`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #E0E7EF">
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-weight:700;font-size:15px">${fmt(e.amount)}</span>
+        <span style="font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;background:${e.type==='fresh'?'#E8F5E9':e.type==='reinvest'?'#E3F2FD':'#FFF8E1'};color:${e.type==='fresh'?'#1B5E20':e.type==='reinvest'?'#0D47A1':'#E65100'}">${e.type==='fresh'?'💵 Fresh':e.type==='reinvest'?'🔄 Reinvested':'📋 Planned'}</span>
+      </div>
+      <div style="font-size:12px;color:#546E7A;margin-top:3px">${e.date||'—'}${e.note?' • '+e.note:''}</div>
+      ${e.purpose?`<div style="font-size:12px;color:#1565C0;margin-top:2px">🎯 ${e.purpose}${e.expectedDate?' (by '+e.expectedDate+')':''}</div>`:''}
+    </div>
+    <div style="display:flex;gap:4px;flex-shrink:0">
+      <button class="btn-ghost" onclick="openInvestmentSheet('${e.id}')">✏️</button>
+      <button class="btn-icon btn-danger" onclick="deleteInvestmentEntry('${e.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:13px;height:13px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+    </div>
+  </div>`;
+
+  const allPast=[...fresh,...reinvest].sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  return `<div class="card" style="border-left:4px solid #1565C0;background:linear-gradient(135deg,#E3F2FD 0%,#fff 60%)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="card-title" style="margin-bottom:0;color:#0D47A1">💰 Investment Ledger</div>
+      <button class="btn btn-sm btn-primary" onclick="openInvestmentSheet()">+ Add Entry</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:#E8F5E9;border-radius:8px;padding:10px;border:1px solid #C8E6C9">
+        <div style="font-size:10px;color:#2E7D32;font-weight:700;text-transform:uppercase">💵 Fresh Capital</div>
+        <div style="font-size:18px;font-weight:700;color:#1B5E20;margin-top:3px">${fmtShort(totalFresh)}</div>
+        <div style="font-size:11px;color:#546E7A">${fresh.length} entries</div>
+      </div>
+      <div style="background:#E3F2FD;border-radius:8px;padding:10px;border:1px solid #BBDEFB">
+        <div style="font-size:10px;color:#1565C0;font-weight:700;text-transform:uppercase">🔄 Reinvested</div>
+        <div style="font-size:18px;font-weight:700;color:#0D47A1;margin-top:3px">${fmtShort(totalReinvest)}</div>
+        <div style="font-size:11px;color:#546E7A">${reinvest.length} entries</div>
+      </div>
+      <div style="background:${netPL>=0?'#E8F5E9':'#FFEBEE'};border-radius:8px;padding:10px;border:1px solid ${netPL>=0?'#C8E6C9':'#FFCDD2'}">
+        <div style="font-size:10px;color:${netPL>=0?'#2E7D32':'#C62828'};font-weight:700;text-transform:uppercase">📊 Net P/L</div>
+        <div style="font-size:18px;font-weight:700;color:${netPL>=0?'#0F6E56':'#C62828'};margin-top:3px">${(netPL>=0?'+':'')+fmtShort(netPL)}</div>
+        <div style="font-size:11px;color:#546E7A">From sold animals</div>
+      </div>
+      <div style="background:#FFF8E1;border-radius:8px;padding:10px;border:1px solid #FFE082">
+        <div style="font-size:10px;color:#E65100;font-weight:700;text-transform:uppercase">📈 ROI</div>
+        <div style="font-size:18px;font-weight:700;color:${roi>=0?'#0F6E56':'#C62828'};margin-top:3px">${roi}%</div>
+        <div style="font-size:11px;color:#546E7A">On total invested</div>
+      </div>
+    </div>
+    ${totalInvested>0?`<div class="summary-box" style="margin-bottom:14px">
+      <div class="summary-row"><span style="color:#546E7A">Total Fresh Capital</span><span>${fmt(totalFresh)}</span></div>
+      <div class="summary-row"><span style="color:#546E7A">Total Reinvested Profit</span><span>${fmt(totalReinvest)}</span></div>
+      <div class="summary-row total"><span>Total Invested</span><span>${fmt(totalInvested)}</span></div>
+      <div class="summary-row" style="padding-top:8px"><span style="color:#546E7A">Total Revenue (sales)</span><span class="profit-pos">${fmt(totalRevenue)}</span></div>
+      <div class="summary-row"><span style="color:#546E7A">Total Spent (cost)</span><span class="profit-neg">${fmt(totalSpent)}</span></div>
+      <div class="summary-row profit-row"><span>Net Profit/Loss</span><span class="${netPL>=0?'profit-pos':'profit-neg'}">${(netPL>=0?'+':'')+fmt(netPL)}</span></div>
+    </div>`:''}
+    ${allPast.length?`<div style="font-size:11px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">Past Investments</div>${allPast.map(e=>entryRow(e,false)).join('')}`:'<div style="color:#546E7A;font-size:13px;padding:10px 0;text-align:center">Koi investment entry nahi. "+ Add Entry" se shuru karo.</div>'}
+    ${planned.length?`<div style="font-size:11px;font-weight:700;color:#E65100;text-transform:uppercase;letter-spacing:0.04em;margin:14px 0 4px">📋 Planned Future Investments — Total: ${fmt(totalPlanned)}</div>${planned.map(e=>entryRow(e,true)).join('')}`:''}
+  </div>`;
+}
+
 // ── RENDER METRICS ─────────────────────────────────────────────────────────
 // NOTE: metrics now use the SAME filter as the Animals list (currentFilter) below,
 // so "Sold" / "Active" / "All" stays in sync between the metric cards and the list.
@@ -1326,7 +1498,8 @@ function renderReport(){
     `:`<div style="text-align:center;padding:10px;color:#546E7A;font-size:13px">Pick a date range above to see sold-animal totals for that period.</div>`}
   </div>
 
-  ${sold.length?`<div class="card"><div class="card-title">All Sold Animals — Profit / Loss</div>${soldRows}</div>`:''}`;
+  ${sold.length?`<div class="card"><div class="card-title">All Sold Animals — Profit / Loss</div>${soldRows}</div>`:''}
+  ${renderInvestmentSection()}`;
 }
 
 // ── EXPORT / DOWNLOAD ────────────────────────────────────────────────────────
