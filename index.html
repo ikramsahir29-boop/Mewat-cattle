@@ -283,12 +283,10 @@ body.tone-report{background:linear-gradient(180deg,#E9F3EF 0%,#ABC4B7 220px)}
 <div class="tabs" style="margin-bottom:14px">
   <button type="button" class="tab-btn active" id="invTypeBtnFresh" onclick="setInvType('fresh')">💵 Fresh Capital</button>
   <button type="button" class="tab-btn" id="invTypeBtnReinvest" onclick="setInvType('reinvest')">🔄 Reinvested Profit</button>
-  <button type="button" class="tab-btn" id="invTypeBtnPlanned" onclick="setInvType('planned')">📋 Planned</button>
 </div>
 <div id="invTypeDesc" style="background:#E3F2FD;border-radius:var(--radius);padding:8px 12px;font-size:12px;color:#1565C0;margin-bottom:14px"></div>
 <div class="form-row"><div class="form-group"><label>Amount (Rs.) *</label><input type="number" id="invAmount" placeholder="0" inputmode="numeric"></div><div class="form-group"><label>Date *</label><input type="date" id="invDate"></div></div>
 <div class="form-group"><label>Description / Note</label><input type="text" id="invNote" placeholder="e.g. Sold 5 goats, profit reinvested..."></div>
-<div id="invPlannedExtra" style="display:none"><div class="form-row"><div class="form-group"><label>Target / Purpose</label><input type="text" id="invPurpose" placeholder="e.g. Buy 10 Sahiwal calves..."></div><div class="form-group"><label>Expected Date</label><input type="date" id="invExpectedDate"></div></div></div>
 <button class="btn btn-primary btn-full" onclick="saveInvestmentEntry()">✓ Save Entry</button>
 </div></div></div>
 
@@ -995,18 +993,16 @@ function proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,tota
 // ── INVESTMENT LEDGER ─────────────────────────────────────────────────────
 let _invType = 'fresh';
 const _invTypeDesc = {
-  fresh: '💵 Fresh Capital — paisa jo tumne apni jeb se naya lagaya (pichle sale ka nahi)',
-  reinvest: '🔄 Reinvested Profit — janwar bechne ka jo munafa dobara farm mein lagaya',
-  planned: '📋 Planned Investment — future mein karna chahte ho (estimated amount)'
+  fresh: '💵 Fresh Capital — apni jeb se naya paisa jo farm mein lagaya',
+  reinvest: '🔄 Reinvested Profit — janwar bechne ka munafa jo dobara farm mein lagaya'
 };
 function setInvType(t){
   _invType=t;
-  ['fresh','reinvest','planned'].forEach(k=>{
+  ['fresh','reinvest'].forEach(k=>{
     const b=document.getElementById('invTypeBtn'+k.charAt(0).toUpperCase()+k.slice(1));
     if(b) b.classList.toggle('active',k===t);
   });
   const desc=document.getElementById('invTypeDesc'); if(desc) desc.textContent=_invTypeDesc[t]||'';
-  const extra=document.getElementById('invPlannedExtra'); if(extra) extra.style.display=t==='planned'?'block':'none';
 }
 function openInvestmentSheet(editId){
   _invEditId=editId||null;
@@ -1015,16 +1011,12 @@ function openInvestmentSheet(editId){
   document.getElementById('invAmount').value='';
   document.getElementById('invDate').value=td();
   document.getElementById('invNote').value='';
-  document.getElementById('invPurpose').value='';
-  document.getElementById('invExpectedDate').value='';
   if(editId){
     const e=investmentLedger.find(x=>x.id===editId); if(!e)return;
     setInvType(e.type);
     document.getElementById('invAmount').value=e.amount||'';
     document.getElementById('invDate').value=e.date||td();
     document.getElementById('invNote').value=e.note||'';
-    document.getElementById('invPurpose').value=e.purpose||'';
-    document.getElementById('invExpectedDate').value=e.expectedDate||'';
   }
   openSheet('investmentSheet');
   setTimeout(()=>document.getElementById('invAmount').focus(),300);
@@ -1038,8 +1030,6 @@ function saveInvestmentEntry(){
   const entry={
     id:_invEditId||gId(), type:_invType, amount, date,
     note:document.getElementById('invNote').value,
-    purpose:document.getElementById('invPurpose').value,
-    expectedDate:document.getElementById('invExpectedDate').value,
     createdAt:Date.now()
   };
   if(_invEditId){ const i=investmentLedger.findIndex(x=>x.id===_invEditId); if(i>-1) investmentLedger[i]=entry; }
@@ -1059,35 +1049,23 @@ function deleteInvestmentEntry(id){
 function renderInvestmentSection(){
   const fresh=investmentLedger.filter(e=>e.type==='fresh');
   const reinvest=investmentLedger.filter(e=>e.type==='reinvest');
-  const planned=investmentLedger.filter(e=>e.type==='planned');
   const totalFresh=fresh.reduce((s,e)=>s+e.amount,0);
   const totalReinvest=reinvest.reduce((s,e)=>s+e.amount,0);
-  const totalPlanned=planned.reduce((s,e)=>s+e.amount,0);
-  const totalInvested=totalFresh+totalReinvest;
-  // Auto-compute from animals data
-  const soldAnimals=animals.filter(a=>a.sold);
-  const totalRevenue=soldAnimals.reduce((s,a)=>s+(a.salePrice||0),0);
-  const totalSpent=animals.reduce((s,a)=>s+getTotalCost(a),0);
-  const farmTotal=farmExpenses.reduce((s,e)=>s+e.amount,0);
-  const netPL=totalRevenue-totalSpent-(includeFarmInAll?farmTotal:0);
-  const roi=totalInvested>0?Math.round(netPL/totalInvested*100):0;
+  const allEntries=[...investmentLedger].filter(e=>e.type==='fresh'||e.type==='reinvest').sort((a,b)=>new Date(b.date)-new Date(a.date));
 
-  const entryRow=(e,showStatus)=>`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #E0E7EF">
+  const entryRow=e=>`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid #E0E7EF">
     <div style="flex:1;min-width:0">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
         <span style="font-weight:700;font-size:15px">${fmt(e.amount)}</span>
-        <span style="font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;background:${e.type==='fresh'?'#E8F5E9':e.type==='reinvest'?'#E3F2FD':'#FFF8E1'};color:${e.type==='fresh'?'#1B5E20':e.type==='reinvest'?'#0D47A1':'#E65100'}">${e.type==='fresh'?'💵 Fresh':e.type==='reinvest'?'🔄 Reinvested':'📋 Planned'}</span>
+        <span style="font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700;background:${e.type==='fresh'?'#E8F5E9':'#E3F2FD'};color:${e.type==='fresh'?'#1B5E20':'#0D47A1'}">${e.type==='fresh'?'💵 Fresh Capital':'🔄 Reinvested'}</span>
       </div>
       <div style="font-size:12px;color:#546E7A;margin-top:3px">${e.date||'—'}${e.note?' • '+e.note:''}</div>
-      ${e.purpose?`<div style="font-size:12px;color:#1565C0;margin-top:2px">🎯 ${e.purpose}${e.expectedDate?' (by '+e.expectedDate+')':''}</div>`:''}
     </div>
     <div style="display:flex;gap:4px;flex-shrink:0">
       <button class="btn-ghost" onclick="openInvestmentSheet('${e.id}')">✏️</button>
       <button class="btn-icon btn-danger" onclick="deleteInvestmentEntry('${e.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:13px;height:13px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
     </div>
   </div>`;
-
-  const allPast=[...fresh,...reinvest].sort((a,b)=>new Date(b.date)-new Date(a.date));
 
   return `<div class="card" style="border-left:4px solid #1565C0;background:linear-gradient(135deg,#E3F2FD 0%,#fff 60%)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -1097,35 +1075,16 @@ function renderInvestmentSection(){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
       <div style="background:#E8F5E9;border-radius:8px;padding:10px;border:1px solid #C8E6C9">
         <div style="font-size:10px;color:#2E7D32;font-weight:700;text-transform:uppercase">💵 Fresh Capital</div>
-        <div style="font-size:18px;font-weight:700;color:#1B5E20;margin-top:3px">${fmtShort(totalFresh)}</div>
+        <div style="font-size:20px;font-weight:700;color:#1B5E20;margin-top:3px">${fmtShort(totalFresh)}</div>
         <div style="font-size:11px;color:#546E7A">${fresh.length} entries</div>
       </div>
       <div style="background:#E3F2FD;border-radius:8px;padding:10px;border:1px solid #BBDEFB">
         <div style="font-size:10px;color:#1565C0;font-weight:700;text-transform:uppercase">🔄 Reinvested</div>
-        <div style="font-size:18px;font-weight:700;color:#0D47A1;margin-top:3px">${fmtShort(totalReinvest)}</div>
+        <div style="font-size:20px;font-weight:700;color:#0D47A1;margin-top:3px">${fmtShort(totalReinvest)}</div>
         <div style="font-size:11px;color:#546E7A">${reinvest.length} entries</div>
       </div>
-      <div style="background:${netPL>=0?'#E8F5E9':'#FFEBEE'};border-radius:8px;padding:10px;border:1px solid ${netPL>=0?'#C8E6C9':'#FFCDD2'}">
-        <div style="font-size:10px;color:${netPL>=0?'#2E7D32':'#C62828'};font-weight:700;text-transform:uppercase">📊 Net P/L</div>
-        <div style="font-size:18px;font-weight:700;color:${netPL>=0?'#0F6E56':'#C62828'};margin-top:3px">${(netPL>=0?'+':'')+fmtShort(netPL)}</div>
-        <div style="font-size:11px;color:#546E7A">From sold animals</div>
-      </div>
-      <div style="background:#FFF8E1;border-radius:8px;padding:10px;border:1px solid #FFE082">
-        <div style="font-size:10px;color:#E65100;font-weight:700;text-transform:uppercase">📈 ROI</div>
-        <div style="font-size:18px;font-weight:700;color:${roi>=0?'#0F6E56':'#C62828'};margin-top:3px">${roi}%</div>
-        <div style="font-size:11px;color:#546E7A">On total invested</div>
-      </div>
     </div>
-    ${totalInvested>0?`<div class="summary-box" style="margin-bottom:14px">
-      <div class="summary-row"><span style="color:#546E7A">Total Fresh Capital</span><span>${fmt(totalFresh)}</span></div>
-      <div class="summary-row"><span style="color:#546E7A">Total Reinvested Profit</span><span>${fmt(totalReinvest)}</span></div>
-      <div class="summary-row total"><span>Total Invested</span><span>${fmt(totalInvested)}</span></div>
-      <div class="summary-row" style="padding-top:8px"><span style="color:#546E7A">Total Revenue (sales)</span><span class="profit-pos">${fmt(totalRevenue)}</span></div>
-      <div class="summary-row"><span style="color:#546E7A">Total Spent (cost)</span><span class="profit-neg">${fmt(totalSpent)}</span></div>
-      <div class="summary-row profit-row"><span>Net Profit/Loss</span><span class="${netPL>=0?'profit-pos':'profit-neg'}">${(netPL>=0?'+':'')+fmt(netPL)}</span></div>
-    </div>`:''}
-    ${allPast.length?`<div style="font-size:11px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px">Past Investments</div>${allPast.map(e=>entryRow(e,false)).join('')}`:'<div style="color:#546E7A;font-size:13px;padding:10px 0;text-align:center">Koi investment entry nahi. "+ Add Entry" se shuru karo.</div>'}
-    ${planned.length?`<div style="font-size:11px;font-weight:700;color:#E65100;text-transform:uppercase;letter-spacing:0.04em;margin:14px 0 4px">📋 Planned Future Investments — Total: ${fmt(totalPlanned)}</div>${planned.map(e=>entryRow(e,true)).join('')}`:''}
+    ${allEntries.length ? allEntries.map(entryRow).join('') : '<div style="color:#546E7A;font-size:13px;padding:10px 0;text-align:center">Koi entry nahi — "+ Add Entry" se shuru karo</div>'}
   </div>`;
 }
 
