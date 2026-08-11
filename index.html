@@ -314,16 +314,15 @@ const SB_URL = 'https://khgkzaucytawsowanutp.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoZ2t6YXVjeXRhd3Nvd2FudXRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDY0MTcsImV4cCI6MjA5NjU4MjQxN30.xwPxNjzHdZSkFigwWNFcNICmVz8ZLSvNhBv0aCw3EAc';
 const TBL = 'cattle_data';
 let _saveTimer = null;
-let _cloudSaving = false;
 
+// GET latest value for a key from Supabase
 async function sbGet(key){
   try{
-    const r = await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${encodeURIComponent(key)}&select=value&order=id.desc&limit=1`,{
+    const r = await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${key}&select=value&order=id.desc&limit=1`,{
       headers:{
         'apikey':SB_KEY,
         'Authorization':'Bearer '+SB_KEY,
-        'Cache-Control':'no-cache, no-store, must-revalidate',
-        'Pragma':'no-cache'
+        'Cache-Control':'no-cache'
       }
     });
     if(!r.ok) return null;
@@ -332,109 +331,88 @@ async function sbGet(key){
   }catch(e){ return null; }
 }
 
+// SAVE a key/value to Supabase — INSERT only (GET always reads latest row)
 async function sbSet(key, value){
-  try{
-    // INSERT only — no DELETE needed because sbGet always fetches the newest row
-    // (order=id.desc&limit=1). This avoids DELETE being blocked by some mobile networks.
-    const r = await fetch(`${SB_URL}/rest/v1/${TBL}`,{
-      method:'POST',
-      headers:{
-        'apikey':SB_KEY,
-        'Authorization':'Bearer '+SB_KEY,
-        'Content-Type':'application/json',
-        'Prefer':'return=minimal'
-      },
-      body:JSON.stringify({key, value})
-    });
-    if(!r.ok) throw new Error('Save failed: '+r.status);
-  }catch(e){
-    console.error('sbSet error:',e);
-    throw e;
-  }
+  const r = await fetch(`${SB_URL}/rest/v1/${TBL}`,{
+    method:'POST',
+    headers:{
+      'apikey':SB_KEY,
+      'Authorization':'Bearer '+SB_KEY,
+      'Content-Type':'application/json',
+      'Prefer':'return=minimal'
+    },
+    body:JSON.stringify({key, value})
+  });
+  if(!r.ok) throw new Error('Supabase error: '+r.status);
 }
 
-// SAVE — always save local first, then push to cloud
+// SAVE — save locally first, then push to cloud
 function sv(){
-  const savedAt = Date.now();
-  // Immediately save to localStorage
+  const savedAt = Date.now().toString();
+  // Always save to localStorage immediately
   try{ localStorage.setItem('mct_animals', JSON.stringify(animals)); }catch(e){}
   try{ localStorage.setItem('mct_batches', JSON.stringify(batches)); }catch(e){}
   try{ localStorage.setItem('mct_farmExpenses', JSON.stringify(farmExpenses)); }catch(e){}
   try{ localStorage.setItem('mct_investments', JSON.stringify(investmentLedger)); }catch(e){}
-  try{ localStorage.setItem('mct_savedAt', savedAt.toString()); }catch(e){}
-  // Push to cloud after 500ms debounce
+  try{ localStorage.setItem('mct_savedAt', savedAt); }catch(e){}
+  // Push to cloud with 600ms debounce
   clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(async () => {
-    const aStr = JSON.stringify(animals);
-    const bStr = JSON.stringify(batches);
-    const fStr = JSON.stringify(farmExpenses);
-    const iStr = JSON.stringify(investmentLedger);
-    try{ localStorage.setItem('mct_animals', aStr); }catch(e){}
-    try{ localStorage.setItem('mct_batches', bStr); }catch(e){}
-    try{ localStorage.setItem('mct_farmExpenses', fStr); }catch(e){}
-    try{ localStorage.setItem('mct_investments', iStr); }catch(e){}
+  _saveTimer = setTimeout(async ()=>{
     if(!navigator.onLine){ showSyncBar('💾 Saved locally','#FFF3E0','#E65100',true); _saveTimer=null; return; }
     try{
-      await sbSet('animals', aStr);
-      await sbSet('batches', bStr);
-      await sbSet('farmExpenses', fStr);
-      await sbSet('investments', iStr);
-      await sbSet('savedAt', savedAt.toString());
+      await sbSet('animals', JSON.stringify(animals));
+      await sbSet('batches', JSON.stringify(batches));
+      await sbSet('farmExpenses', JSON.stringify(farmExpenses));
+      await sbSet('investments', JSON.stringify(investmentLedger));
+      await sbSet('savedAt', savedAt);
       showSyncBar('✅ Saved & Synced','#E8F5E9','#2E7D32',true);
     }catch(e){
       showSyncBar('⚠️ Saved locally — cloud sync failed','#FFEBEE','#C62828',true);
     }
-    _saveTimer = null;
-  }, 500);
+    _saveTimer=null;
+  }, 600);
 }
 
-// LOAD — manual (🔄 button) or auto on startup when cloud is newer
+// LOAD from cloud — used by 🔄 button and auto-sync on startup
 async function loadFromCloud(){
   if(!navigator.onLine){ showSyncBar('📵 No internet','#FFEBEE','#C62828',true); return; }
-  if(_saveTimer){
-    showSyncBar('⏳ Saving first...','#FFF8E1','#E65100',false);
-    await new Promise(r => setTimeout(r, 800));
-  }
+  if(_saveTimer){ await new Promise(r=>setTimeout(r,800)); }
   showSyncBar('⏳ Syncing...','#E3F2FD','#1565C0',false);
   try{
-    const [aStr, bStr, fStr, iStr, cloudTs] = await Promise.all([
-      sbGet('animals'), sbGet('batches'), sbGet('farmExpenses'), sbGet('investments'), sbGet('savedAt')
+    const [aStr,bStr,fStr,iStr,cloudTs] = await Promise.all([
+      sbGet('animals'),sbGet('batches'),sbGet('farmExpenses'),sbGet('investments'),sbGet('savedAt')
     ]);
-    if(_saveTimer){ showSyncBar('⏳ Still saving...','#FFF8E1','#E65100',true); return; }
-    if(aStr){ animals = JSON.parse(aStr); localStorage.setItem('mct_animals', aStr); }
-    if(bStr){ batches = JSON.parse(bStr); localStorage.setItem('mct_batches', bStr); }
-    if(fStr){ farmExpenses = JSON.parse(fStr); localStorage.setItem('mct_farmExpenses', fStr); }
-    if(iStr){ investmentLedger = JSON.parse(iStr); localStorage.setItem('mct_investments', iStr); }
-    // Stamp local savedAt — use cloud's savedAt if available, otherwise use current time.
-    // This ensures localTs is ALWAYS a valid number after a successful sync,
-    // so future autoSyncOnStartup comparisons work correctly.
-    const stampTs = (cloudTs && cloudTs !== 'null') ? cloudTs : Date.now().toString();
-    try{ localStorage.setItem('mct_savedAt', stampTs); }catch(e){}
+    if(aStr){ animals=JSON.parse(aStr); localStorage.setItem('mct_animals',aStr); }
+    if(bStr){ batches=JSON.parse(bStr); localStorage.setItem('mct_batches',bStr); }
+    if(fStr){ farmExpenses=JSON.parse(fStr); localStorage.setItem('mct_farmExpenses',fStr); }
+    if(iStr){ investmentLedger=JSON.parse(iStr); localStorage.setItem('mct_investments',iStr); }
+    if(cloudTs){ try{ localStorage.setItem('mct_savedAt',cloudTs); }catch(e){} }
     populateBatchDropdown('fBatch','');
-    // Re-render whichever page is currently active — not just Animals
-    const activePage = document.querySelector('.page.active');
-    const pageId = activePage ? activePage.id.replace('page-','') : 'animals';
-    if(pageId==='animals') renderAnimals();
-    else if(pageId==='batches') renderBatches();
-    else if(pageId==='collective') renderCollective();
-    else if(pageId==='report') renderReport();
+    const pg=document.querySelector('.page.active');
+    const pid=pg?pg.id.replace('page-',''):'animals';
+    if(pid==='animals') renderAnimals();
+    else if(pid==='batches') renderBatches();
+    else if(pid==='collective') renderCollective();
+    else if(pid==='report') renderReport();
     else renderAnimals();
-    showSyncBar(`✅ Synced — ${animals.length} animals from cloud`,'#E8F5E9','#2E7D32',true);
-  }catch(e){ showSyncBar('⚠️ Failed','#FFEBEE','#C62828',true); }
+    showSyncBar(`✅ Synced — ${animals.length} animals`,'#E8F5E9','#2E7D32',true);
+  }catch(e){ showSyncBar('⚠️ Sync failed','#FFEBEE','#C62828',true); }
 }
 
-// AUTO-SYNC on startup — simplest reliable approach for single-user two-device setup:
-// Always load from cloud on startup if online. Cloud always has the latest saved state
-// (every sv() pushes to cloud), so loading from cloud on startup guarantees both
-// devices always see the same data without any timestamp comparison complexity.
+// AUTO-SYNC on startup:
+// Compare cloud savedAt vs local savedAt — load cloud only if cloud is newer.
+// This prevents overwriting local data when cloud has older data.
 async function autoSyncOnStartup(){
   if(!navigator.onLine) return;
-  // If a local save is pending, wait for it to finish first so we don't overwrite it
-  if(_saveTimer){
-    await new Promise(r => setTimeout(r, 1200));
-  }
-  // Now load from cloud — this will get the latest data from whichever device last saved
-  await loadFromCloud();
+  try{
+    const cloudTs = await sbGet('savedAt');
+    const cloudNum = cloudTs ? (parseInt(cloudTs)||0) : 0;
+    const localNum = parseInt(localStorage.getItem('mct_savedAt')||'0');
+    if(cloudNum > localNum){
+      await loadFromCloud();
+    }
+    // If local is same or newer — keep local, don't overwrite
+  }catch(e){}
 }
 
 function showSyncBar(msg,bg,color,autoHide){
@@ -445,10 +423,8 @@ function showSyncBar(msg,bg,color,autoHide){
   el.innerHTML=`<span style="color:${color};font-weight:600">${msg}</span>`;
   if(autoHide)setTimeout(()=>{el.style.display='none';},2500);
 }
-function hideSyncStatus(s){ showSyncBar('✅ Synced','#E8F5E9','#2E7D32',true); }
 
-window.addEventListener('online', ()=>{ sv(); });
-
+window.addEventListener('online',()=>{ sv(); });
 
 let animals = [];
 let batches = [];
@@ -465,24 +441,10 @@ try{ animals = JSON.parse(localStorage.getItem('mct_animals') || '[]'); }catch(e
 try{ batches = JSON.parse(localStorage.getItem('mct_batches') || '[]'); }catch(e){}
 try{ farmExpenses = JSON.parse(localStorage.getItem('mct_farmExpenses') || '[]'); }catch(e){}
 try{ investmentLedger = JSON.parse(localStorage.getItem('mct_investments') || '[]'); }catch(e){}
-// Always auto-sync from cloud on startup (if online).
-// If local is empty → sync immediately. If local has data → sync after 1s delay
-// (gives time for the page to render first so user sees something instantly).
+// Auto-sync on startup
 if(!animals.length){ setTimeout(loadFromCloud, 500); }
 else { setTimeout(autoSyncOnStartup, 1000); }
 
-
-
-
-
-
-
-
-
-// When back online — push local data to cloud
-window.addEventListener('online', ()=>{ sv(); });
-
-// Manual sync only — no auto sync to prevent overwriting
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 function gId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
