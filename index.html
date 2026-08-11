@@ -334,12 +334,8 @@ async function sbGet(key){
 
 async function sbSet(key, value){
   try{
-    // Step 1: Delete any existing rows (including duplicates) for this key
-    await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${encodeURIComponent(key)}`,{
-      method:'DELETE',
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'}
-    });
-    // Step 2: Insert fresh row
+    // INSERT only — no DELETE needed because sbGet always fetches the newest row
+    // (order=id.desc&limit=1). This avoids DELETE being blocked by some mobile networks.
     const r = await fetch(`${SB_URL}/rest/v1/${TBL}`,{
       method:'POST',
       headers:{
@@ -350,10 +346,10 @@ async function sbSet(key, value){
       },
       body:JSON.stringify({key, value})
     });
-    if(!r.ok) throw new Error('Insert failed: '+r.status);
-  }catch(e){ 
+    if(!r.ok) throw new Error('Save failed: '+r.status);
+  }catch(e){
     console.error('sbSet error:',e);
-    throw e; // re-throw so caller knows save failed
+    throw e;
   }
 }
 
