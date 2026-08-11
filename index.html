@@ -319,7 +319,12 @@ let _cloudSaving = false;
 async function sbGet(key){
   try{
     const r = await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${encodeURIComponent(key)}&select=value&order=id.desc&limit=1`,{
-      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+      headers:{
+        'apikey':SB_KEY,
+        'Authorization':'Bearer '+SB_KEY,
+        'Cache-Control':'no-cache, no-store, must-revalidate',
+        'Pragma':'no-cache'
+      }
     });
     if(!r.ok) return null;
     const d = await r.json();
@@ -418,7 +423,7 @@ async function loadFromCloud(){
     else if(pageId==='collective') renderCollective();
     else if(pageId==='report') renderReport();
     else renderAnimals();
-    showSyncBar('✅ Synced','#E8F5E9','#2E7D32',true);
+    showSyncBar(`✅ Synced — ${animals.length} animals from cloud`,'#E8F5E9','#2E7D32',true);
   }catch(e){ showSyncBar('⚠️ Failed','#FFEBEE','#C62828',true); }
 }
 
