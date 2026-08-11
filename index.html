@@ -318,7 +318,7 @@ let _cloudSaving = false;
 
 async function sbGet(key){
   try{
-    const r = await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${key}&select=value`,{
+    const r = await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${encodeURIComponent(key)}&select=value&order=id.desc&limit=1`,{
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
     });
     if(!r.ok) return null;
@@ -329,19 +329,27 @@ async function sbGet(key){
 
 async function sbSet(key, value){
   try{
-    // UPSERT — single atomic operation, no delete-then-insert gap that could cause data loss
+    // Step 1: Delete any existing rows (including duplicates) for this key
+    await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${encodeURIComponent(key)}`,{
+      method:'DELETE',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=minimal'}
+    });
+    // Step 2: Insert fresh row
     const r = await fetch(`${SB_URL}/rest/v1/${TBL}`,{
       method:'POST',
       headers:{
         'apikey':SB_KEY,
         'Authorization':'Bearer '+SB_KEY,
         'Content-Type':'application/json',
-        'Prefer':'resolution=merge-duplicates'
+        'Prefer':'return=minimal'
       },
       body:JSON.stringify({key, value})
     });
-    if(!r.ok) throw new Error('Supabase save failed: '+r.status);
-  }catch(e){ console.error('sbSet:',e); }
+    if(!r.ok) throw new Error('Insert failed: '+r.status);
+  }catch(e){ 
+    console.error('sbSet error:',e);
+    throw e; // re-throw so caller knows save failed
+  }
 }
 
 // SAVE — always save local first, then push to cloud
@@ -365,12 +373,16 @@ function sv(){
     try{ localStorage.setItem('mct_farmExpenses', fStr); }catch(e){}
     try{ localStorage.setItem('mct_investments', iStr); }catch(e){}
     if(!navigator.onLine){ showSyncBar('💾 Saved locally','#FFF3E0','#E65100',true); _saveTimer=null; return; }
-    await sbSet('animals', aStr);
-    await sbSet('batches', bStr);
-    await sbSet('farmExpenses', fStr);
-    await sbSet('investments', iStr);
-    await sbSet('savedAt', savedAt.toString());
-    showSyncBar('✅ Saved & Synced','#E8F5E9','#2E7D32',true);
+    try{
+      await sbSet('animals', aStr);
+      await sbSet('batches', bStr);
+      await sbSet('farmExpenses', fStr);
+      await sbSet('investments', iStr);
+      await sbSet('savedAt', savedAt.toString());
+      showSyncBar('✅ Saved & Synced','#E8F5E9','#2E7D32',true);
+    }catch(e){
+      showSyncBar('⚠️ Saved locally — cloud sync failed','#FFEBEE','#C62828',true);
+    }
     _saveTimer = null;
   }, 500);
 }
