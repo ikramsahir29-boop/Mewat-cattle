@@ -155,13 +155,28 @@ body.tone-report{background:linear-gradient(180deg,#E9F3EF 0%,#ABC4B7 220px)}
       <p id="headerSub">Complete livestock management</p>
     </div>
     <button class="btn btn-sm btn-primary desktop-only" onclick="openAddAnimal()">+ New Animal</button>
-    <button onclick="loadFromCloud()" title="Sync from cloud" style="background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.5);border-radius:10px;padding:10px 16px;cursor:pointer;color:#fff;font-size:16px;font-weight:700;min-width:48px;min-height:48px;display:flex;align-items:center;justify-content:center">🔄</button>
+    
   </div>
   <div id="syncBar" style="display:none;text-align:center;font-size:12px;padding:4px 16px"></div>
 
   <div class="page active" id="page-animals">
     <div style="height:12px"></div>
     <div class="metrics" id="metricsArea"></div>
+
+    <!-- Market Rate Estimator -->
+    <div id="marketRateCard" style="background:linear-gradient(135deg,#E8F5E9,#fff);border-radius:var(--radius-lg);border:1px solid #A5D6A7;padding:12px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div style="font-size:12px;font-weight:700;color:#2E7D32;text-transform:uppercase;letter-spacing:0.04em">📊 Market Rate Estimator</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;color:#546E7A">Rs. per kg:</span>
+          <input type="number" id="pricePerKgInput" inputmode="numeric" placeholder="e.g. 535"
+            style="width:90px;padding:6px 10px;border-radius:8px;border:1.5px solid #A5D6A7;background:#fff;font-size:14px;font-weight:700;font-family:inherit;text-align:center"
+            oninput="updatePricePerKg(this.value)">
+          <button onclick="clearPricePerKg()" style="padding:5px 10px;border-radius:8px;border:1px solid #CFD8DC;background:#fff;font-size:12px;cursor:pointer;color:#546E7A">✕ Clear</button>
+        </div>
+      </div>
+      <div id="marketRateSummary" style="margin-top:8px"></div>
+    </div>
     <div class="tabs" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div style="display:flex;gap:8px;flex:1">
         <button class="tab-btn active" onclick="filterAnimals('all',this)">All</button>
@@ -309,110 +324,20 @@ body.tone-report{background:linear-gradient(180deg,#E9F3EF 0%,#ABC4B7 220px)}
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Supabase Sync ──────────────────────────────────────────────────────────
-const SB_URL = 'https://khgkzaucytawsowanutp.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoZ2t6YXVjeXRhd3Nvd2FudXRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwMDY0MTcsImV4cCI6MjA5NjU4MjQxN30.xwPxNjzHdZSkFigwWNFcNICmVz8ZLSvNhBv0aCw3EAc';
-const TBL = 'cattle_data';
+// ── Local Storage Only (sync removed temporarily) ─────────────────────────
 let _saveTimer = null;
 
-// GET latest value for a key from Supabase
-async function sbGet(key){
-  try{
-    const r = await fetch(`${SB_URL}/rest/v1/${TBL}?key=eq.${key}&select=value&order=id.desc&limit=1`,{
-      headers:{
-        'apikey':SB_KEY,
-        'Authorization':'Bearer '+SB_KEY,
-        'Cache-Control':'no-cache'
-      }
-    });
-    if(!r.ok) return null;
-    const d = await r.json();
-    return (d&&d[0]) ? d[0].value : null;
-  }catch(e){ return null; }
-}
-
-// SAVE a key/value to Supabase — INSERT only (GET always reads latest row)
-async function sbSet(key, value){
-  const r = await fetch(`${SB_URL}/rest/v1/${TBL}`,{
-    method:'POST',
-    headers:{
-      'apikey':SB_KEY,
-      'Authorization':'Bearer '+SB_KEY,
-      'Content-Type':'application/json',
-      'Prefer':'return=minimal'
-    },
-    body:JSON.stringify({key, value})
-  });
-  if(!r.ok) throw new Error('Supabase error: '+r.status);
-}
-
-// SAVE — save locally first, then push to cloud
 function sv(){
-  const savedAt = Date.now().toString();
-  // Always save to localStorage immediately
   try{ localStorage.setItem('mct_animals', JSON.stringify(animals)); }catch(e){}
   try{ localStorage.setItem('mct_batches', JSON.stringify(batches)); }catch(e){}
   try{ localStorage.setItem('mct_farmExpenses', JSON.stringify(farmExpenses)); }catch(e){}
   try{ localStorage.setItem('mct_investments', JSON.stringify(investmentLedger)); }catch(e){}
-  try{ localStorage.setItem('mct_savedAt', savedAt); }catch(e){}
-  // Push to cloud with 600ms debounce
+  try{ localStorage.setItem('mct_savedAt', Date.now().toString()); }catch(e){}
   clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(async ()=>{
-    if(!navigator.onLine){ showSyncBar('💾 Saved locally','#FFF3E0','#E65100',true); _saveTimer=null; return; }
-    try{
-      await sbSet('animals', JSON.stringify(animals));
-      await sbSet('batches', JSON.stringify(batches));
-      await sbSet('farmExpenses', JSON.stringify(farmExpenses));
-      await sbSet('investments', JSON.stringify(investmentLedger));
-      await sbSet('savedAt', savedAt);
-      showSyncBar('✅ Saved & Synced','#E8F5E9','#2E7D32',true);
-    }catch(e){
-      showSyncBar('⚠️ Saved locally — cloud sync failed','#FFEBEE','#C62828',true);
-    }
+  _saveTimer = setTimeout(()=>{
+    showSyncBar('💾 Saved','#E8F5E9','#2E7D32',true);
     _saveTimer=null;
-  }, 600);
-}
-
-// LOAD from cloud — used by 🔄 button and auto-sync on startup
-async function loadFromCloud(){
-  if(!navigator.onLine){ showSyncBar('📵 No internet','#FFEBEE','#C62828',true); return; }
-  if(_saveTimer){ await new Promise(r=>setTimeout(r,800)); }
-  showSyncBar('⏳ Syncing...','#E3F2FD','#1565C0',false);
-  try{
-    const [aStr,bStr,fStr,iStr,cloudTs] = await Promise.all([
-      sbGet('animals'),sbGet('batches'),sbGet('farmExpenses'),sbGet('investments'),sbGet('savedAt')
-    ]);
-    if(aStr){ animals=JSON.parse(aStr); localStorage.setItem('mct_animals',aStr); }
-    if(bStr){ batches=JSON.parse(bStr); localStorage.setItem('mct_batches',bStr); }
-    if(fStr){ farmExpenses=JSON.parse(fStr); localStorage.setItem('mct_farmExpenses',fStr); }
-    if(iStr){ investmentLedger=JSON.parse(iStr); localStorage.setItem('mct_investments',iStr); }
-    if(cloudTs){ try{ localStorage.setItem('mct_savedAt',cloudTs); }catch(e){} }
-    populateBatchDropdown('fBatch','');
-    const pg=document.querySelector('.page.active');
-    const pid=pg?pg.id.replace('page-',''):'animals';
-    if(pid==='animals') renderAnimals();
-    else if(pid==='batches') renderBatches();
-    else if(pid==='collective') renderCollective();
-    else if(pid==='report') renderReport();
-    else renderAnimals();
-    showSyncBar(`✅ Synced — ${animals.length} animals`,'#E8F5E9','#2E7D32',true);
-  }catch(e){ showSyncBar('⚠️ Sync failed','#FFEBEE','#C62828',true); }
-}
-
-// AUTO-SYNC on startup:
-// Compare cloud savedAt vs local savedAt — load cloud only if cloud is newer.
-// This prevents overwriting local data when cloud has older data.
-async function autoSyncOnStartup(){
-  if(!navigator.onLine) return;
-  try{
-    const cloudTs = await sbGet('savedAt');
-    const cloudNum = cloudTs ? (parseInt(cloudTs)||0) : 0;
-    const localNum = parseInt(localStorage.getItem('mct_savedAt')||'0');
-    if(cloudNum > localNum){
-      await loadFromCloud();
-    }
-    // If local is same or newer — keep local, don't overwrite
-  }catch(e){}
+  }, 300);
 }
 
 function showSyncBar(msg,bg,color,autoHide){
@@ -424,27 +349,112 @@ function showSyncBar(msg,bg,color,autoHide){
   if(autoHide)setTimeout(()=>{el.style.display='none';},2500);
 }
 
-window.addEventListener('online',()=>{ sv(); });
-
+// ── DATA — load from localStorage on startup ───────────────────────────────
 let animals = [];
 let batches = [];
 let farmExpenses = [];
 let investmentLedger = [];
 let includeFarmInAll = true;
-try{ const v = localStorage.getItem('mct_includeFarmInAll'); if(v!==null) includeFarmInAll = v==='true'; }catch(e){}
+try{ const v=localStorage.getItem('mct_includeFarmInAll'); if(v!==null) includeFarmInAll=v==='true'; }catch(e){}
 function toggleIncludeFarmInAll(){
-  includeFarmInAll = !includeFarmInAll;
+  includeFarmInAll=!includeFarmInAll;
   try{ localStorage.setItem('mct_includeFarmInAll', includeFarmInAll); }catch(e){}
   renderMetrics();
 }
-try{ animals = JSON.parse(localStorage.getItem('mct_animals') || '[]'); }catch(e){}
-try{ batches = JSON.parse(localStorage.getItem('mct_batches') || '[]'); }catch(e){}
-try{ farmExpenses = JSON.parse(localStorage.getItem('mct_farmExpenses') || '[]'); }catch(e){}
-try{ investmentLedger = JSON.parse(localStorage.getItem('mct_investments') || '[]'); }catch(e){}
-// Auto-sync on startup
-if(!animals.length){ setTimeout(loadFromCloud, 500); }
-else { setTimeout(autoSyncOnStartup, 1000); }
+try{ animals=JSON.parse(localStorage.getItem('mct_animals')||'[]'); }catch(e){}
+try{ batches=JSON.parse(localStorage.getItem('mct_batches')||'[]'); }catch(e){}
+try{ farmExpenses=JSON.parse(localStorage.getItem('mct_farmExpenses')||'[]'); }catch(e){}
+try{ investmentLedger=JSON.parse(localStorage.getItem('mct_investments')||'[]'); }catch(e){}
 
+// ── MARKET RATE ESTIMATOR STATE ────────────────────────────────────────────
+let pricePerKg = 0;
+try{ pricePerKg = parseFloat(localStorage.getItem('mct_pricePerKg')||'0')||0; }catch(e){}
+
+function updatePricePerKg(val){
+  pricePerKg = parseFloat(val)||0;
+  try{ localStorage.setItem('mct_pricePerKg', pricePerKg); }catch(e){}
+  renderMarketRateSummary();
+  renderAnimals();
+}
+function clearPricePerKg(){
+  pricePerKg = 0;
+  try{ localStorage.removeItem('mct_pricePerKg'); }catch(e){}
+  const inp = document.getElementById('pricePerKgInput');
+  if(inp) inp.value = '';
+  renderMarketRateSummary();
+  renderAnimals();
+}
+function renderMarketRateSummary(){
+  const el = document.getElementById('marketRateSummary'); if(!el) return;
+  const inp = document.getElementById('pricePerKgInput');
+  if(inp && pricePerKg > 0 && !inp.value) inp.value = pricePerKg;
+  if(!pricePerKg){ el.innerHTML='<div style="font-size:12px;color:#546E7A">Enter price per kg above to see estimated sale value and profit/loss for each animal.</div>'; return; }
+
+  const activeWithWeight = animals.filter(a=>!a.sold && getLastW(a));
+  const totalEstValue = activeWithWeight.reduce((s,a)=>s+(getLastW(a).weight*pricePerKg),0);
+  const totalCostActive = activeWithWeight.reduce((s,a)=>s+getTotalCost(a),0);
+  const totalEstPL = totalEstValue - totalCostActive;
+
+  if(!activeWithWeight.length){
+    el.innerHTML='<div style="font-size:12px;color:#546E7A;padding:6px 0">No active animals with weight recorded.</div>';
+    return;
+  }
+
+  // Per-animal rows
+  const rows = activeWithWeight.map(a=>{
+    const lw = getLastW(a);
+    const cost = getTotalCost(a);
+    const estVal = lw.weight * pricePerKg;
+    const estPL = estVal - cost;
+    return `<tr>
+      <td style="padding:8px 6px;font-weight:600;font-size:13px;border-bottom:1px solid #E0E7EF">${a.name}</td>
+      <td style="padding:8px 6px;text-align:center;font-size:13px;border-bottom:1px solid #E0E7EF">${lw.weight} kg</td>
+      <td style="padding:8px 6px;text-align:right;font-size:13px;border-bottom:1px solid #E0E7EF;color:#546E7A">${fmt(cost)}</td>
+      <td style="padding:8px 6px;text-align:right;font-size:13px;border-bottom:1px solid #E0E7EF;color:#0F6E56;font-weight:700">${fmt(estVal)}</td>
+      <td style="padding:8px 6px;text-align:right;font-size:13px;border-bottom:1px solid #E0E7EF;font-weight:700" class="${estPL>=0?'profit-pos':'profit-neg'}">${(estPL>=0?'+':'')+fmt(estPL)}</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
+      <div style="background:#E8F5E9;border-radius:8px;padding:8px;text-align:center;border:1px solid #C8E6C9">
+        <div style="font-size:10px;color:#2E7D32;font-weight:700">EST. TOTAL VALUE</div>
+        <div style="font-size:15px;font-weight:700;color:#0F6E56;margin-top:2px">${fmtShort(totalEstValue)}</div>
+      </div>
+      <div style="background:#FFEBEE;border-radius:8px;padding:8px;text-align:center;border:1px solid #FFCDD2">
+        <div style="font-size:10px;color:#C62828;font-weight:700">TOTAL COST</div>
+        <div style="font-size:15px;font-weight:700;color:#C62828;margin-top:2px">${fmtShort(totalCostActive)}</div>
+      </div>
+      <div style="background:${totalEstPL>=0?'#E8F5E9':'#FFEBEE'};border-radius:8px;padding:8px;text-align:center;border:1px solid ${totalEstPL>=0?'#C8E6C9':'#FFCDD2'}">
+        <div style="font-size:10px;color:${totalEstPL>=0?'#2E7D32':'#C62828'};font-weight:700">EST. P/L (ALL)</div>
+        <div style="font-size:15px;font-weight:700;color:${totalEstPL>=0?'#0F6E56':'#C62828'};margin-top:2px">${(totalEstPL>=0?'+':'')+fmtShort(totalEstPL)}</div>
+      </div>
+    </div>
+
+    <div style="margin-top:10px;overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:#F0F4F8">
+            <th style="padding:7px 6px;text-align:left;font-size:11px;font-weight:700;color:#546E7A;text-transform:uppercase;border-bottom:2px solid #D0D8E4">Animal</th>
+            <th style="padding:7px 6px;text-align:center;font-size:11px;font-weight:700;color:#546E7A;text-transform:uppercase;border-bottom:2px solid #D0D8E4">Weight</th>
+            <th style="padding:7px 6px;text-align:right;font-size:11px;font-weight:700;color:#546E7A;text-transform:uppercase;border-bottom:2px solid #D0D8E4">Total Cost</th>
+            <th style="padding:7px 6px;text-align:right;font-size:11px;font-weight:700;color:#0F6E56;text-transform:uppercase;border-bottom:2px solid #D0D8E4">Est. Value</th>
+            <th style="padding:7px 6px;text-align:right;font-size:11px;font-weight:700;color:#546E7A;text-transform:uppercase;border-bottom:2px solid #D0D8E4">Est. P/L</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr style="background:#F8FFFE">
+            <td style="padding:8px 6px;font-weight:700;font-size:13px;border-top:2px solid #B2DFDB" colspan="2">TOTAL (${activeWithWeight.length} animals)</td>
+            <td style="padding:8px 6px;text-align:right;font-weight:700;font-size:13px;border-top:2px solid #B2DFDB;color:#546E7A">${fmt(totalCostActive)}</td>
+            <td style="padding:8px 6px;text-align:right;font-weight:700;font-size:13px;border-top:2px solid #B2DFDB;color:#0F6E56">${fmt(totalEstValue)}</td>
+            <td style="padding:8px 6px;text-align:right;font-weight:700;font-size:14px;border-top:2px solid #B2DFDB" class="${totalEstPL>=0?'profit-pos':'profit-neg'}">${(totalEstPL>=0?'+':'')+fmt(totalEstPL)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <div style="font-size:11px;color:#546E7A;margin-top:6px">Rate: Rs. ${pricePerKg}/kg • Active animals with weight only</div>`;
+}
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
 function gId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -1167,16 +1177,36 @@ function renderAnimals(){
           </div>
         </div>
       </div>
+      ${!a.sold && pricePerKg > 0 && lw ? (()=>{
+        const estVal = lw.weight * pricePerKg;
+        const estPL = estVal - cost;
+        return `<div style="margin-top:10px;padding:10px 12px;background:${estPL>=0?'linear-gradient(135deg,#E8F5E9,#F1F8E9)':'linear-gradient(135deg,#FFEBEE,#FFF3F3)'};border-radius:10px;border:1.5px solid ${estPL>=0?'#A5D6A7':'#FFCDD2'}">
+          <div style="font-size:10px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px">📊 Market Rate — Rs. ${pricePerKg}/kg</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:11px;color:#546E7A">Estimated Sale Value</div>
+              <div style="font-size:20px;font-weight:700;color:#0F6E56">${fmt(estVal)}</div>
+              <div style="font-size:10px;color:#546E7A">${lw.weight} kg × Rs. ${pricePerKg}/kg</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:11px;color:#546E7A">Estimated Profit / Loss</div>
+              <div style="font-size:20px;font-weight:700" class="${estPL>=0?'profit-pos':'profit-neg'}">${(estPL>=0?'+':'')+fmt(estPL)}</div>
+              <div style="font-size:10px;color:#546E7A">Cost: ${fmt(cost)}</div>
+            </div>
+          </div>
+        </div>`;
+      })() : ''}
     </div>`;
   }).join('');
 
   const tRows=list.map(a=>{
     const cost=getTotalCost(a),expTotal=(a.expenses||[]).reduce((s,e)=>s+e.amount,0),profit=getProfit(a),days=daysAgo(a.purchaseDate),lw=getLastW(a),gain=getTotalGain(a),rate=getGrowthRate(a);
     const batch=a.batchId&&getBatchById(a.batchId);
-    return `<tr onclick="openDetail('${a.id}')" style="cursor:pointer"><td><strong>${a.name}</strong><br><small style="color:#546E7A">${a.breed||'—'}</small>${batch?`<br><span style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);color:#1B5E20;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px">📦 ${batch.name}</span>`:''}</td><td>${lw?lw.weight+' kg':'—'}${gain!==null?`<br><small class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)}kg</small>`:''}</td><td>${rate!==null?(rate*30).toFixed(1)+' kg/mo':'—'}</td><td>${fmt(a.purchasePrice)}</td><td>${fmt(expTotal)}</td><td><strong>${fmt(cost)}</strong></td><td>${a.sold?`<strong>${fmt(a.salePrice)}</strong><br><small class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</small>`:`<span style="color:#546E7A">${days!==null?days+' days':'—'}</span>`}</td><td><span class="badge ${a.sold?'badge-sold':'badge-active'}">${a.sold?'Sold':'Active'}</span></td></tr>`;
+    return `<tr onclick="openDetail('${a.id}')" style="cursor:pointer"><td><strong>${a.name}</strong><br><small style="color:#546E7A">${a.breed||'—'}</small>${batch?`<br><span style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);color:#1B5E20;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px">📦 ${batch.name}</span>`:''}</td><td>${lw?lw.weight+' kg':'—'}${gain!==null?`<br><small class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)}kg</small>`:''}</td><td>${rate!==null?(rate*30).toFixed(1)+' kg/mo':'—'}</td><td>${fmt(a.purchasePrice)}</td><td>${fmt(expTotal)}</td><td><strong>${fmt(cost)}</strong></td><td>${a.sold?`<strong>${fmt(a.salePrice)}</strong><br><small class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</small>`:pricePerKg>0&&lw?(()=>{const ev=lw.weight*pricePerKg;const ep=ev-cost;return`<span style="font-size:12px;color:#0F6E56;font-weight:700">${fmt(ev)}</span><br><small class="${ep>=0?'profit-pos':'profit-neg'}">${(ep>=0?'+':'')+fmt(ep)}</small>`;})():`<span style="color:#546E7A">${days!==null?days+' days':'—'}</span>`}</td><td><span class="badge ${a.sold?'badge-sold':'badge-active'}">${a.sold?'Sold':'Active'}</span></td></tr>`;
   }).join('');
 
-  el.innerHTML=`<div class="mobile-only">${mobileCards}</div><div class="desktop-only card" style="padding:0;overflow:hidden"><table class="desktop-table"><thead><tr><th>Name</th><th>Weight</th><th>Growth/Mo</th><th>Purchase</th><th>Expense</th><th>Total Cost</th><th>Sale Price / P&L</th><th>Status</th></tr></thead><tbody>${tRows}</tbody></table></div>`;
+  el.innerHTML=`<div class="mobile-only">${mobileCards}</div><div class="desktop-only card" style="padding:0;overflow:hidden"><table class="desktop-table"><thead><tr><th>Name</th><th>Weight</th><th>Growth/Mo</th><th>Purchase</th><th>Expense</th><th>Total Cost</th><th>${pricePerKg>0?'Est. Value / P&L':'Sale Price / P&L'}</th><th>Status</th></tr></thead><tbody>${tRows}</tbody></table></div>`;
+  renderMarketRateSummary();
 }
 
 function switchCardTab(btn,tab,id){
@@ -1612,6 +1642,12 @@ function downloadReportCSV(){
 populateBatchDropdown('fBatch','');
 document.body.classList.add('tone-animals');
 renderAnimals();
+// Set saved price per kg in input field if exists
+if(pricePerKg > 0){
+  const inp = document.getElementById('pricePerKgInput');
+  if(inp) inp.value = pricePerKg;
+  renderMarketRateSummary();
+}
 
 // Fix: ensure all date inputs allow full year range (2015-2035) so the native
 // calendar picker's year selector isn't restricted to a narrow window
