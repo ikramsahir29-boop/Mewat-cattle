@@ -1,4 +1,4 @@
-const CACHE = 'mewat-cattle-v1';
+const CACHE = 'mewat-cattle-v2';
 const FILES = [
   '/Mewat-cattle/',
   '/Mewat-cattle/index.html'
