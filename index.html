@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Mewat Cattle Tracker</title>
+<title>Mewat Cattle Farm</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Mewat Cattle">
+<meta name="apple-mobile-web-app-title" content="Mewat Cattle Farm">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
 <style>
@@ -153,20 +153,12 @@ body.tone-report{background:linear-gradient(180deg,#E9F3EF 0%,#ABC4B7 220px)}
 @media(max-width:699px){.desktop-only{display:none}}
 </style>
 </head>
-<script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/Mewat-cattle/sw.js')
-      .then(()=>console.log('SW registered'))
-      .catch(e=>console.log('SW failed:',e));
-  });
-}
-</script>
+
 <body>
 <div class="app">
   <div class="header">
     <div class="header-left">
-      <h1>🐄 Mewat Cattle Tracker</h1>
+      <h1>🐄 Mewat Cattle Farm</h1>
       <p id="headerSub">Complete livestock management</p>
     </div>
     <button class="btn btn-sm btn-primary desktop-only" onclick="openAddAnimal()">+ New Animal</button>
@@ -282,7 +274,7 @@ if('serviceWorker' in navigator){
 <!-- Sheets -->
 <div class="sheet-overlay" id="expSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title" id="expSheetTitle">Add Expense</div><button class="btn-icon" onclick="closeSheet('expSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div class="form-group"><label>Expense Type</label><select id="eType"><option>Feed</option><option>Medicine</option><option>Labour</option><option>Veterinary Fee</option><option>Transport</option><option>Other</option></select></div><div class="form-row"><div class="form-group"><label>Amount (Rs.) *</label><input type="number" id="eAmount" placeholder="0" inputmode="numeric"></div><div class="form-group"><label>Date</label><input type="date" id="eDate"></div></div><div class="form-group"><label>Description (optional)</label><input type="text" id="eDesc" placeholder="e.g. 2 bags feed..."></div><button class="btn btn-primary btn-full" onclick="saveExpense()">Add Expense</button></div></div></div>
 
-<div class="sheet-overlay" id="weightSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title" id="weightSheetTitle">Record Weight</div><button class="btn-icon" onclick="closeSheet('weightSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div id="weightPrevInfo" style="margin-bottom:14px"></div><div class="form-row"><div class="form-group"><label>New Weight (kg) *</label><input type="number" id="wWeight" placeholder="0" inputmode="decimal" oninput="updateWeightPreview()"></div><div class="form-group"><label>Date *</label><input type="date" id="wDate" oninput="updateWeightPreview()"></div></div><div class="form-group"><label>Notes (optional)</label><input type="text" id="wNote" placeholder="e.g. monthly check..."></div><div id="weightGainPreview"></div><div style="height:12px"></div><button class="btn btn-primary btn-full" onclick="saveWeight()">✓ Save Weight</button></div></div></div>
+<div class="sheet-overlay" id="weightSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title" id="weightSheetTitle">Record Weight</div><button class="btn-icon" onclick="closeSheet('weightSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div id="weightPrevInfo" style="margin-bottom:14px"></div><div class="form-group"><label>Weight Type</label><select id="wStage" onchange="onWeightStageChange()"><option value="">General / Periodic Check</option><option value="farm">🚚 Weight at Farm (after transport from mandi)</option></select></div><div class="form-row"><div class="form-group"><label>New Weight (kg) *</label><input type="number" id="wWeight" placeholder="0" inputmode="decimal" oninput="updateWeightPreview()"></div><div class="form-group"><label>Date *</label><input type="date" id="wDate" oninput="updateWeightPreview()"></div></div><div class="form-group"><label>Notes (optional)</label><input type="text" id="wNote" placeholder="e.g. monthly check..."></div><div id="weightGainPreview"></div><div style="height:12px"></div><button class="btn btn-primary btn-full" onclick="saveWeight()">✓ Save Weight</button></div></div></div>
 
 <div class="sheet-overlay" id="saleSheet"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-header"><div class="sheet-title" id="saleSheetTitle">Sell Animal</div><button class="btn-icon" onclick="closeSheet('saleSheet')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:18px;height:18px"><line x1="18" y1="6" x2="6" y2="18" stroke-linecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke-linecap="round"/></svg></button></div><div class="sheet-body"><div id="saleCostPreview" style="margin-bottom:14px"></div><div class="form-row"><div class="form-group"><label>Sale Price (Rs.) *</label><input type="number" id="sSalePrice" placeholder="0" inputmode="numeric" oninput="updateSalePreview()"></div><div class="form-group"><label>Sale Date</label><input type="date" id="sSaleDate"></div></div><div class="form-row"><div class="form-group"><label>Weight at sale (kg)</label><input type="number" id="sSaleWeight" placeholder="0" inputmode="decimal"></div><div class="form-group"><label>Buyer Name</label><input type="text" id="sBuyer" placeholder="Name or number..."></div></div><div id="saleResultPreview"></div><div style="height:12px"></div><button class="btn btn-primary btn-full" onclick="confirmSale()">✓ Confirm Sale</button></div></div></div>
 
@@ -343,11 +335,11 @@ if('serviceWorker' in navigator){
 let _saveTimer = null;
 
 function sv(){
-  try{ localStorage.setItem('mct_animals', JSON.stringify(animals)); }catch(e){}
-  try{ localStorage.setItem('mct_batches', JSON.stringify(batches)); }catch(e){}
-  try{ localStorage.setItem('mct_farmExpenses', JSON.stringify(farmExpenses)); }catch(e){}
-  try{ localStorage.setItem('mct_investments', JSON.stringify(investmentLedger)); }catch(e){}
-  try{ localStorage.setItem('mct_savedAt', Date.now().toString()); }catch(e){}
+  try{ localStorage.setItem('kbcf_animals', JSON.stringify(animals)); }catch(e){}
+  try{ localStorage.setItem('kbcf_batches', JSON.stringify(batches)); }catch(e){}
+  try{ localStorage.setItem('kbcf_farmExpenses', JSON.stringify(farmExpenses)); }catch(e){}
+  try{ localStorage.setItem('kbcf_investments', JSON.stringify(investmentLedger)); }catch(e){}
+  try{ localStorage.setItem('kbcf_savedAt', Date.now().toString()); }catch(e){}
   clearTimeout(_saveTimer);
   _saveTimer = setTimeout(()=>{
     showSyncBar('💾 Saved','#E8F5E9','#2E7D32',true);
@@ -370,30 +362,30 @@ let batches = [];
 let farmExpenses = [];
 let investmentLedger = [];
 let includeFarmInAll = true;
-try{ const v=localStorage.getItem('mct_includeFarmInAll'); if(v!==null) includeFarmInAll=v==='true'; }catch(e){}
+try{ const v=localStorage.getItem('kbcf_includeFarmInAll'); if(v!==null) includeFarmInAll=v==='true'; }catch(e){}
 function toggleIncludeFarmInAll(){
   includeFarmInAll=!includeFarmInAll;
-  try{ localStorage.setItem('mct_includeFarmInAll', includeFarmInAll); }catch(e){}
+  try{ localStorage.setItem('kbcf_includeFarmInAll', includeFarmInAll); }catch(e){}
   renderMetrics();
 }
-try{ animals=JSON.parse(localStorage.getItem('mct_animals')||'[]'); }catch(e){}
-try{ batches=JSON.parse(localStorage.getItem('mct_batches')||'[]'); }catch(e){}
-try{ farmExpenses=JSON.parse(localStorage.getItem('mct_farmExpenses')||'[]'); }catch(e){}
-try{ investmentLedger=JSON.parse(localStorage.getItem('mct_investments')||'[]'); }catch(e){}
+try{ animals=JSON.parse(localStorage.getItem('kbcf_animals')||'[]'); }catch(e){}
+try{ batches=JSON.parse(localStorage.getItem('kbcf_batches')||'[]'); }catch(e){}
+try{ farmExpenses=JSON.parse(localStorage.getItem('kbcf_farmExpenses')||'[]'); }catch(e){}
+try{ investmentLedger=JSON.parse(localStorage.getItem('kbcf_investments')||'[]'); }catch(e){}
 
 // ── MARKET RATE ESTIMATOR STATE ────────────────────────────────────────────
 let pricePerKg = 0;
-try{ pricePerKg = parseFloat(localStorage.getItem('mct_pricePerKg')||'0')||0; }catch(e){}
+try{ pricePerKg = parseFloat(localStorage.getItem('kbcf_pricePerKg')||'0')||0; }catch(e){}
 
 function updatePricePerKg(val){
   pricePerKg = parseFloat(val)||0;
-  try{ localStorage.setItem('mct_pricePerKg', pricePerKg); }catch(e){}
+  try{ localStorage.setItem('kbcf_pricePerKg', pricePerKg); }catch(e){}
   renderMarketRateSummary();
   renderAnimals();
 }
 function clearPricePerKg(){
   pricePerKg = 0;
-  try{ localStorage.removeItem('mct_pricePerKg'); }catch(e){}
+  try{ localStorage.removeItem('kbcf_pricePerKg'); }catch(e){}
   const inp = document.getElementById('pricePerKgInput');
   if(inp) inp.value = '';
   renderMarketRateSummary();
@@ -483,6 +475,7 @@ function getWLog(a){ return [...(a.weightLog||[])].sort((x,y)=>new Date(x.date)-
 function getLastW(a){ const l=getWLog(a); return l.length?l[l.length-1]:null; }
 function getTotalGain(a){ const l=getWLog(a); return l.length>=2?l[l.length-1].weight-l[0].weight:null; }
 function getGrowthRate(a){ const l=getWLog(a); if(l.length<2)return null; const d=Math.max(1,(new Date(l[l.length-1].date)-new Date(l[0].date))/864e5); return(l[l.length-1].weight-l[0].weight)/d; }
+function getFarmW(a){ const l=getWLog(a); return l.find(w=>w.stage==='farm')||null; }
 function growthBadge(r){
   if(r===null) return '';
   const daily_g = r * 1000; // convert kg/day to grams/day
@@ -502,7 +495,10 @@ function getBatchStats(bId){
   const sold=list.filter(a=>a.sold);
   const totalRevenue=sold.reduce((s,a)=>s+(a.salePrice||0),0);
   const netPL=sold.reduce((s,a)=>s+(a.salePrice-getTotalCost(a)),0);
-  return{list,totalPurchase,totalExpense,totalCost,totalRevenue,netPL,soldCount:sold.length,activeCount:list.filter(a=>!a.sold).length};
+  const activeList=list.filter(a=>!a.sold);
+  const totalWeight=activeList.reduce((s,a)=>{const lw=getLastW(a);return s+(lw?lw.weight:0);},0);
+  const weighedCount=activeList.filter(a=>getLastW(a)).length;
+  return{list,totalPurchase,totalExpense,totalCost,totalRevenue,netPL,soldCount:sold.length,activeCount:activeList.length,totalWeight,weighedCount};
 }
 function populateBatchDropdown(selId,selVal){
   const sel=document.getElementById(selId); if(!sel)return;
@@ -581,11 +577,19 @@ function openSheet(id){ document.getElementById(id).style.display='flex'; reques
 function closeSheet(id){ document.getElementById(id).classList.remove('open'); setTimeout(()=>document.getElementById(id).style.display='',300); }
 
 function openExpense(id){ expTargetId=id; const a=animals.find(x=>x.id===id); document.getElementById('expSheetTitle').textContent='Expense — '+a.name; document.getElementById('eAmount').value=''; document.getElementById('eDesc').value=''; document.getElementById('eDate').value=td(); document.getElementById('eType').value='Feed'; openSheet('expSheet'); setTimeout(()=>document.getElementById('eAmount').focus(),300); }
+function onWeightStageChange(){
+  const stage=document.getElementById('wStage').value; const noteEl=document.getElementById('wNote');
+  if(stage==='farm'&&(!noteEl.value||noteEl.value==='Weight at Farm')){noteEl.value='Weight at Farm';}
+  else if(stage===''&&noteEl.value==='Weight at Farm'){noteEl.value='';}
+}
 function openWeight(id){
-  weightTargetId=id; weightEditId=null; const a=animals.find(x=>x.id===id); const lw=getLastW(a);
+  weightTargetId=id; weightEditId=null; const a=animals.find(x=>x.id===id); const lw=getLastW(a); const wlog=getWLog(a);
   document.getElementById('weightSheetTitle').textContent='Weight — '+a.name;
   document.getElementById('wWeight').value=''; document.getElementById('wNote').value=''; document.getElementById('wDate').value=td(); document.getElementById('weightGainPreview').innerHTML='';
-  document.getElementById('weightPrevInfo').innerHTML=lw?`<div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Last weight</span><span><strong>${lw.weight} kg</strong></span></div><div class="summary-row"><span style="color:#546E7A">Date</span><span>${lw.date||'—'}</span></div></div>`:`<div style="background:#E3F2FD;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#1565C0">This will be the base weight.</div>`;
+  const suggestFarm=wlog.length===1&&!getFarmW(a);
+  document.getElementById('wStage').value=suggestFarm?'farm':'';
+  if(suggestFarm)document.getElementById('wNote').value='Weight at Farm';
+  document.getElementById('weightPrevInfo').innerHTML=(lw?`<div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Last weight</span><span><strong>${lw.weight} kg</strong></span></div><div class="summary-row"><span style="color:#546E7A">Date</span><span>${lw.date||'—'}</span></div></div>${suggestFarm?`<div style="background:#FFF8E1;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#E65100;margin-top:8px">🚚 Ye mandi ke baad ka pehla weight lagta hai — "Weight at Farm" select kar diya gaya hai.</div>`:''}`:`<div style="background:#E3F2FD;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#1565C0">This will be the base weight.</div>`);
   openSheet('weightSheet'); setTimeout(()=>document.getElementById('wWeight').focus(),300);
 }
 function updateWeightPreview(){
@@ -627,11 +631,11 @@ function saveAnimal(){
   if(editingId){
     const a=animals.find(x=>x.id===editingId);
     Object.assign(a,{name,breed:document.getElementById('fBreed').value,gender:document.getElementById('fGender').value,purchaseDate:document.getElementById('fPurchaseDate').value,purchasePrice:price,weightBuy:wBuy,age:parseInt(document.getElementById('fAge').value)||0,notes:document.getElementById('fNotes').value,batchId:document.getElementById('fBatch').value||null});
-    if(wBuy){if(!a.weightLog||!a.weightLog.length)a.weightLog=[{id:gId(),weight:wBuy,date:a.purchaseDate||td(),note:'Weight at Purchase'}];else{const s=getWLog(a);const f=a.weightLog.find(x=>x.id===s[0].id);if(f){f.weight=wBuy;f.date=a.purchaseDate||f.date;}}}
+    if(wBuy){if(!a.weightLog||!a.weightLog.length)a.weightLog=[{id:gId(),weight:wBuy,date:a.purchaseDate||td(),note:'Weight at Purchase',stage:'purchase'}];else{const s=getWLog(a);const f=a.weightLog.find(x=>x.id===s[0].id);if(f){f.weight=wBuy;f.date=a.purchaseDate||f.date;}}}
     sv(); toast('✓ Record updated'); openDetail(editingId);
   }else{
     const a={id:gId(),name,breed:document.getElementById('fBreed').value,gender:document.getElementById('fGender').value,purchaseDate:document.getElementById('fPurchaseDate').value,purchasePrice:price,weightBuy:wBuy,age:parseInt(document.getElementById('fAge').value)||0,notes:document.getElementById('fNotes').value,batchId:document.getElementById('fBatch').value||null,expenses:[],weightLog:[],sold:false,createdAt:Date.now()};
-    if(wBuy)a.weightLog=[{id:gId(),weight:wBuy,date:a.purchaseDate||td(),note:'Weight at Purchase'}];
+    if(wBuy)a.weightLog=[{id:gId(),weight:wBuy,date:a.purchaseDate||td(),note:'Weight at Purchase',stage:'purchase'}];
     animals.unshift(a); sv(); toast('✓ '+name+' added'); showPage('animals');
   }
 }
@@ -652,6 +656,7 @@ function editWeight(animalId, wId){
   document.getElementById('wWeight').value=w.weight;
   document.getElementById('wNote').value=w.note==='Weight at Sale'?'':(w.note||'');
   document.getElementById('wDate').value=w.date||td();
+  document.getElementById('wStage').value=w.stage==='farm'?'farm':'';
   document.getElementById('weightGainPreview').innerHTML='';
   document.getElementById('weightPrevInfo').innerHTML=`<div style="background:#FFF8E1;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#E65100">✏️ Editing this weight entry</div>`;
   openSheet('weightSheet'); setTimeout(()=>document.getElementById('wWeight').focus(),300);
@@ -659,19 +664,21 @@ function editWeight(animalId, wId){
 
 function saveWeight(){
   const w=parseFloat(document.getElementById('wWeight').value)||0; const d=document.getElementById('wDate').value;
+  const stage=document.getElementById('wStage').value;
   if(!w){showAlert('Enter weight.');return;} if(!d){showAlert('Select date.');return;}
   const a=animals.find(x=>x.id===weightTargetId); if(!a)return;
   if(!a.weightLog)a.weightLog=[];
+  let note=document.getElementById('wNote').value; if(stage==='farm'&&!note)note='Weight at Farm';
   if(weightEditId){
     const w2=a.weightLog.find(x=>x.id===weightEditId);
-    if(w2){ w2.weight=w; w2.date=d; w2.note=document.getElementById('wNote').value; }
+    if(w2){ w2.weight=w; w2.date=d; w2.note=note; w2.stage=stage||undefined; }
     weightEditId=null;
     sv(); closeSheet('weightSheet');
     toast('✓ Weight entry updated');
   } else {
-    a.weightLog.push({id:gId(),weight:w,date:d,note:document.getElementById('wNote').value});
+    a.weightLog.push({id:gId(),weight:w,date:d,note,stage:stage||undefined});
     sv(); closeSheet('weightSheet');
-    const gain=getTotalGain(a); toast(gain!==null?`✓ ${w}kg — Total: ${gain>=0?'+':''}${gain.toFixed(1)}kg`:`✓ Weight ${w}kg recorded`);
+    const gain=getTotalGain(a); toast(stage==='farm'?`✓ Weight at Farm ${w}kg recorded`:(gain!==null?`✓ ${w}kg — Total: ${gain>=0?'+':''}${gain.toFixed(1)}kg`:`✓ Weight ${w}kg recorded`));
   }
   if(currentDetailId===weightTargetId)renderDetail(weightTargetId);
 }
@@ -964,6 +971,27 @@ function saveCollectiveExpense(){
   proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,totalPeriodDays,useDailyRate,dailyRate);
 }
 
+// Largest-remainder allocation: splits `total` (rounded to whole rupees) among
+// animals proportional to perDayRate*days, guaranteeing the shares sum to
+// exactly Math.round(total) instead of drifting due to independent rounding.
+function allocateSharesLR(animalDays, perDayRate, total){
+  const totalRounded = Math.round(total);
+  const list = animalDays.filter(x=>x.days>0).map(x=>{
+    const raw = perDayRate*x.days;
+    const floor = Math.floor(raw);
+    return { a:x.a, floor, rem: raw-floor };
+  });
+  let sumFloor = list.reduce((s,x)=>s+x.floor,0);
+  let diff = totalRounded - sumFloor;
+  if(diff>0){
+    list.sort((x,y)=>y.rem-x.rem);
+    for(let i=0;i<diff && i<list.length;i++) list[i].floor+=1;
+  } else if(diff<0){
+    list.sort((x,y)=>x.rem-y.rem);
+    for(let i=0;i<(-diff) && i<list.length;i++) list[i].floor-=1;
+  }
+  return new Map(list.map(x=>[x.a.id, x.floor]));
+}
 function proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,totalPeriodDays,useDailyRate,dailyRate){
   const selectedAnimals = sel.map(id=>animals.find(a=>a.id===id)).filter(Boolean);
   const animalDays = selectedAnimals.map(a=>({a, days:daysPresentInPeriod(a,startDate,endDate)}));
@@ -983,11 +1011,17 @@ function proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,tota
     perDayRate = total/totalAnimalDays;
   }
 
+  // Allocate shares using the "largest remainder" method so the sum of all
+  // per-animal shares always equals the entered total exactly (Math.round on
+  // each share independently used to lose/gain a few rupees to rounding —
+  // e.g. Rs.164,500 total ending up as Rs.164,493 after summing shares).
+  const shareMap = allocateSharesLR(animalDays, perDayRate, total);
+
   const bId = editingSharedBatchId || gId();
   let appliedCount=0;
   animalDays.forEach(({a,days})=>{
     if(days<=0) return;
-    const share = Math.round(perDayRate*days);
+    const share = shareMap.get(a.id) ?? 0;
     if(!a.expenses)a.expenses=[];
     a.expenses.push({
       id:gId(), batchId:bId, type, amount:share,
@@ -1183,7 +1217,7 @@ function renderAnimals(){
         </div>
         <span class="badge ${a.sold?'badge-sold':'badge-active'}">${a.sold?'Sold':'Active'}</span>
       </div>
-      ${lw?`<div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:#F0F4F8;border-radius:8px"><span style="font-size:18px">⚖️</span><div style="flex:1"><div style="font-size:13px;font-weight:600">${lw.weight} kg <span style="font-size:11px;color:#546E7A;font-weight:400">latest weight</span></div>${gain!==null?`<div style="font-size:12px;margin-top:1px"><span class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)} kg</span> <span style="color:#546E7A">since purchase${rate!==null?' • '+(rate*30).toFixed(1)+' kg/mo':''}</span></div>`:''}</div>${growthBadge(rate)}</div>`:'<div style="margin-top:8px;padding:6px 10px;background:#FFF8E1;border-radius:7px;font-size:12px;color:#E65100">⚠️ Weight not recorded — add from Growth tab</div>'}
+      ${lw?`<div style="display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:#F0F4F8;border-radius:8px"><span style="font-size:18px">⚖️</span><div style="flex:1"><div style="font-size:13px;font-weight:600">${lw.weight} kg <span style="font-size:11px;color:#546E7A;font-weight:400">latest weight</span></div>${gain!==null?`<div style="font-size:12px;margin-top:1px"><span class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)} kg</span> <span style="color:#546E7A">since purchase${rate!==null?' • '+(rate*30).toFixed(1)+' kg/mo ('+rate.toFixed(2)+' kg/day)':''}</span></div>`:''}</div>${growthBadge(rate)}</div>`:'<div style="margin-top:8px;padding:6px 10px;background:#FFF8E1;border-radius:7px;font-size:12px;color:#E65100">⚠️ Weight not recorded — add from Growth tab</div>'}
       <div style="margin-top:10px;padding-top:10px;border-top:1px solid #E0E7EF">
         <div style="display:flex;gap:3px;background:#F0F4F8;border-radius:8px;padding:3px;margin-bottom:10px" onclick="event.stopPropagation()">
           <button onclick="switchCardTab(this,'purchase','${a.id}')" class="ctab ctab-active" style="flex:1;padding:5px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;background:#fff;color:#263238">💰 Purchase</button>
@@ -1225,7 +1259,7 @@ function renderAnimals(){
   const tRows=list.map(a=>{
     const cost=getTotalCost(a),expTotal=(a.expenses||[]).reduce((s,e)=>s+e.amount,0),profit=getProfit(a),days=daysAgo(a.purchaseDate),lw=getLastW(a),gain=getTotalGain(a),rate=getGrowthRate(a);
     const batch=a.batchId&&getBatchById(a.batchId);
-    return `<tr onclick="openDetail('${a.id}')" style="cursor:pointer"><td><strong>${a.name}</strong><br><small style="color:#546E7A">${a.breed||'—'}</small>${batch?`<br><span style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);color:#1B5E20;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px">📦 ${batch.name}</span>`:''}</td><td>${lw?lw.weight+' kg':'—'}${gain!==null?`<br><small class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)}kg</small>`:''}</td><td>${rate!==null?(rate*30).toFixed(1)+' kg/mo':'—'}</td><td>${fmt(a.purchasePrice)}</td><td>${fmt(expTotal)}</td><td><strong>${fmt(cost)}</strong></td><td>${a.sold?`<strong>${fmt(a.salePrice)}</strong><br><small class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</small>`:pricePerKg>0&&lw?(()=>{const ev=lw.weight*pricePerKg;const ep=ev-cost;return`<span style="font-size:12px;color:#0F6E56;font-weight:700">${fmt(ev)}</span><br><small class="${ep>=0?'profit-pos':'profit-neg'}">${(ep>=0?'+':'')+fmt(ep)}</small>`;})():`<span style="color:#546E7A">${days!==null?days+' days':'—'}</span>`}</td><td><span class="badge ${a.sold?'badge-sold':'badge-active'}">${a.sold?'Sold':'Active'}</span></td></tr>`;
+    return `<tr onclick="openDetail('${a.id}')" style="cursor:pointer"><td><strong>${a.name}</strong><br><small style="color:#546E7A">${a.breed||'—'}</small>${batch?`<br><span style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);color:#1B5E20;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px">📦 ${batch.name}</span>`:''}</td><td>${lw?lw.weight+' kg':'—'}${gain!==null?`<br><small class="${gain>=0?'profit-pos':'profit-neg'}">${gain>=0?'+':''}${gain.toFixed(1)}kg</small>`:''}</td><td>${rate!==null?(rate*30).toFixed(1)+' kg/mo<br><small style="color:#546E7A">'+rate.toFixed(2)+' kg/day</small>':'—'}</td><td>${fmt(a.purchasePrice)}</td><td>${fmt(expTotal)}</td><td><strong>${fmt(cost)}</strong></td><td>${a.sold?`<strong>${fmt(a.salePrice)}</strong><br><small class="${profit>=0?'profit-pos':'profit-neg'}">${(profit>=0?'+':'')+fmt(profit)}</small>`:pricePerKg>0&&lw?(()=>{const ev=lw.weight*pricePerKg;const ep=ev-cost;return`<span style="font-size:12px;color:#0F6E56;font-weight:700">${fmt(ev)}</span><br><small class="${ep>=0?'profit-pos':'profit-neg'}">${(ep>=0?'+':'')+fmt(ep)}</small>`;})():`<span style="color:#546E7A">${days!==null?days+' days':'—'}</span>`}</td><td><span class="badge ${a.sold?'badge-sold':'badge-active'}">${a.sold?'Sold':'Active'}</span></td></tr>`;
   }).join('');
 
   el.innerHTML=`<div class="mobile-only">${mobileCards}</div><div class="desktop-only card" style="padding:0;overflow:hidden"><table class="desktop-table"><thead><tr><th>Name</th><th>Weight</th><th>Growth/Mo</th><th>Purchase</th><th>Expense</th><th>Total Cost</th><th>${pricePerKg>0?'Est. Value / P&L':'Sale Price / P&L'}</th><th>Status</th></tr></thead><tbody>${tRows}</tbody></table></div>`;
@@ -1251,19 +1285,19 @@ function renderDetail(id){
   badge.innerHTML=batch?`<span style="display:inline-block;margin-top:5px;background:linear-gradient(135deg,#EDE7F6,#D1C4E9);color:#4527A0;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;border:1px solid #B39DDB">📦 ${batch.name}</span>`:'';
 
   const cost=getTotalCost(a),expTotal=(a.expenses||[]).reduce((s,e)=>s+e.amount,0),profit=getProfit(a),days=daysAgo(a.purchaseDate);
-  const wlog=getWLog(a),lw=getLastW(a),gain=getTotalGain(a),rate=getGrowthRate(a);
+  const wlog=getWLog(a),lw=getLastW(a),gain=getTotalGain(a),rate=getGrowthRate(a),farmW=getFarmW(a);
 
   let chartHTML='';
   if(wlog.length>=2){const maxW=Math.max(...wlog.map(w=>w.weight)),minW=Math.min(...wlog.map(w=>w.weight)),range=(maxW-minW)||1; chartHTML=`<div class="wt-chart">${wlog.map(w=>{const h=Math.round(18+((w.weight-minW)/range)*58);const mo=w.date?w.date.slice(5,7)+'/'+w.date.slice(2,4):'';return`<div class="wt-bar-wrap"><div class="wt-bar" style="height:${h}px;background:#1D9E75"></div><div class="wt-bar-label">${w.weight}</div><div class="wt-bar-label" style="color:#90A4AE">${mo}</div></div>`;}).join('')}</div>`;}
 
-  const wRows=wlog.length===0?'<div style="color:#546E7A;font-size:14px;padding:10px 0">No weight recorded.</div>':wlog.map((w,i)=>{const prev=i>0?wlog[i-1]:null,diff=prev?w.weight-prev.weight:null,db=prev?Math.round((new Date(w.date)-new Date(prev.date))/864e5):null;return`<div class="weight-row"><div class="weight-dot" style="background:${i===0?'#1565C0':diff>0?'#1D9E75':diff<0?'#C62828':'#90A4AE'}"></div><div class="weight-val">${w.weight} kg</div><div class="weight-date">${w.date||'—'}${w.note?' • '+w.note:''}${db?' <span style="color:#90A4AE">('+db+'d)</span>':''}</div>${diff!==null?`<div class="weight-gain ${diff>=0?'pos':'neg'}">${diff>=0?'+':''}${diff.toFixed(1)}kg</div>`:'<div class="weight-gain" style="color:#90A4AE">Base</div>'}<button class="btn-ghost" onclick="event.stopPropagation();editWeight('${a.id}','${w.id}')" style="margin-left:4px">✏️</button><button class="btn-icon btn-danger" onclick="event.stopPropagation();deleteWeight('${a.id}','${w.id}')" style="margin-left:2px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;}).join('');
+  const wRows=wlog.length===0?'<div style="color:#546E7A;font-size:14px;padding:10px 0">No weight recorded.</div>':wlog.map((w,i)=>{const prev=i>0?wlog[i-1]:null,diff=prev?w.weight-prev.weight:null,db=prev?Math.round((new Date(w.date)-new Date(prev.date))/864e5):null;const dotColor=w.stage==='farm'?'#E65100':(i===0?'#1565C0':diff>0?'#1D9E75':diff<0?'#C62828':'#90A4AE');const labelText=w.stage==='farm'?'🚚 Weight at Farm':(w.note||'');return`<div class="weight-row"><div class="weight-dot" style="background:${dotColor}"></div><div class="weight-val">${w.weight} kg</div><div class="weight-date">${w.date||'—'}${labelText?' • '+labelText:''}${db?' <span style="color:#90A4AE">('+db+'d'+((diff!==null)?', '+(diff/db).toFixed(2)+' kg/day':'')+')</span>':''}</div>${diff!==null?`<div class="weight-gain ${diff>=0?'pos':'neg'}">${diff>=0?'+':''}${diff.toFixed(1)}kg</div>`:'<div class="weight-gain" style="color:#90A4AE">Base</div>'}<button class="btn-ghost" onclick="event.stopPropagation();editWeight('${a.id}','${w.id}')" style="margin-left:4px">✏️</button><button class="btn-icon btn-danger" onclick="event.stopPropagation();deleteWeight('${a.id}','${w.id}')" style="margin-left:2px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;}).join('');
 
   const expRows=(a.expenses||[]).length===0?`<tr><td colspan="5" style="padding:12px 0;color:#546E7A;font-size:14px">No expenses recorded.</td></tr>`:[...a.expenses].reverse().map(e=>`<tr id="expRow_${e.id}"><td style="font-weight:600">${e.type}</td><td style="font-weight:700">${fmt(e.amount)}</td><td style="color:#546E7A">${e.desc||'—'}</td><td style="color:#90A4AE">${e.date||'—'}</td><td style="text-align:right;white-space:nowrap"><button class="btn-ghost" onclick="startEditExp('${a.id}','${e.id}')">✏️</button><button class="btn-icon btn-danger" onclick="deleteExpense('${a.id}','${e.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></td></tr><tr id="expEditRow_${e.id}" style="display:none;background:#F5F7FA"><td><select id="expEditType_${e.id}" style="padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;font-size:13px;font-family:inherit"><option>Feed</option><option>Medicine</option><option>Labour</option><option>Veterinary Fee</option><option>Transport</option><option>Other</option></select></td><td><input type="number" id="expEditAmt_${e.id}" inputmode="numeric" style="width:90px;padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;font-size:13px;font-family:inherit"></td><td><input type="text" id="expEditDesc_${e.id}" style="padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;font-size:13px;font-family:inherit;width:100%"></td><td><input type="date" id="expEditDate_${e.id}" style="padding:5px 8px;border-radius:7px;border:1px solid #CFD8DC;background:#fff;font-size:13px;font-family:inherit;width:120px"></td><td style="text-align:right;white-space:nowrap"><button class="btn-ghost" style="color:#0F6E56" onclick="saveEditExp('${a.id}','${e.id}')">✓</button><button class="btn-ghost" onclick="cancelEditExp('${a.id}','${e.id}')">✕</button></td></tr>`).join('');
 
   document.getElementById('detailContent').innerHTML=`
     <div class="card" style="border-left:4px solid #42A5F5;background:linear-gradient(135deg,#E3F2FD 0%,#fff 60%)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;color:#0D47A1">⚖️ Weight Track (${wlog.length} entries)</div>${!a.sold?`<button class="btn btn-sm btn-primary" onclick="openWeight('${a.id}')">+ Weight</button>`:''}</div>
-      ${lw?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px"><div style="background:#E3F2FD;border-radius:8px;padding:10px;text-align:center;border:1px solid #BBDEFB"><div style="font-size:11px;color:#1565C0">Latest Weight</div><div style="font-size:20px;font-weight:700;margin-top:2px">${lw.weight}<span style="font-size:12px;font-weight:400"> kg</span></div></div><div style="background:#E8F5E9;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8E6C9"><div style="font-size:11px;color:#2E7D32">Total Gain</div><div style="font-size:20px;font-weight:700;margin-top:2px;color:${(gain||0)>=0?'#0F6E56':'#C62828'}">${gain!==null?(gain>=0?'+':'')+gain.toFixed(1):'—'}<span style="font-size:12px;font-weight:400"> kg</span></div></div><div style="background:#EDE7F6;border-radius:8px;padding:10px;text-align:center;border:1px solid #D1C4E9"><div style="font-size:11px;color:#4527A0">Growth/Month</div><div style="font-size:18px;font-weight:700;margin-top:2px;color:#4527A0">${rate!==null?(rate*30).toFixed(1):'—'}<span style="font-size:12px;font-weight:400"> kg</span></div>${rate!==null?`<div style="margin-top:4px">${growthBadge(rate)}</div>`:''}</div></div>${chartHTML}`:''}
+      ${lw?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px"><div style="background:#E3F2FD;border-radius:8px;padding:10px;text-align:center;border:1px solid #BBDEFB"><div style="font-size:11px;color:#1565C0">Latest Weight</div><div style="font-size:20px;font-weight:700;margin-top:2px">${lw.weight}<span style="font-size:12px;font-weight:400"> kg</span></div></div><div style="background:#E8F5E9;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8E6C9"><div style="font-size:11px;color:#2E7D32">Total Gain</div><div style="font-size:20px;font-weight:700;margin-top:2px;color:${(gain||0)>=0?'#0F6E56':'#C62828'}">${gain!==null?(gain>=0?'+':'')+gain.toFixed(1):'—'}<span style="font-size:12px;font-weight:400"> kg</span></div></div><div style="background:#EDE7F6;border-radius:8px;padding:10px;text-align:center;border:1px solid #D1C4E9"><div style="font-size:11px;color:#4527A0">Growth/Month</div><div style="font-size:18px;font-weight:700;margin-top:2px;color:#4527A0">${rate!==null?(rate*30).toFixed(1):'—'}<span style="font-size:12px;font-weight:400"> kg</span></div><div style="font-size:11px;color:#546E7A;margin-top:1px">${rate!==null?rate.toFixed(2)+' kg/day':''}</div>${rate!==null?`<div style="margin-top:4px">${growthBadge(rate)}</div>`:''}</div></div>${farmW?`<div style="display:flex;justify-content:space-between;align-items:center;background:#FFF8E1;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;color:#E65100"><span>🚚 Weight at Farm</span><span style="font-weight:700">${farmW.weight} kg <span style="font-weight:400;color:#546E7A">(${farmW.date||'—'})</span></span></div>`:''}${chartHTML}`:''}
       ${wRows}
       ${!a.sold&&wlog.length===0?`<button class="btn btn-primary btn-full" style="margin-top:10px" onclick="openWeight('${a.id}')">⚖️ Record First Weight</button>`:''}
     </div>
@@ -1276,7 +1310,8 @@ function renderDetail(id){
       </div>
       <div style="padding:8px 0;border-top:1px solid #FFE0B2;margin-top:4px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><div style="font-size:11px;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">Purchase Date</div><div style="font-weight:600">${a.purchaseDate||'—'}</div></div>
-        <div><div style="font-size:11px;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">Starting Weight</div><div style="font-weight:600">${wlog.length?wlog[0].weight+' kg':'—'}</div></div>
+        <div><div style="font-size:11px;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">Mandi Weight (First)</div><div style="font-weight:600">${wlog.length?wlog[0].weight+' kg':'—'}</div></div>
+        <div><div style="font-size:11px;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">Weight at Farm</div><div style="font-weight:600">${farmW?farmW.weight+' kg':'—'}</div></div>
         <div><div style="font-size:11px;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">Breed</div><div style="font-weight:600">${a.breed||'—'}</div></div>
         <div><div style="font-size:11px;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:3px">Age</div><div style="font-weight:600">${a.age?a.age+' months':'—'}</div></div>
       </div>${a.notes?`<div style="margin-top:10px;padding:8px 12px;background:#FFF8E1;border-radius:8px;font-size:13px;color:#546E7A">${a.notes}</div>`:''}</div>
@@ -1308,15 +1343,15 @@ function renderBatches(){
   if(!batches.length){el.innerHTML=`<div class="card" style="text-align:center;padding:24px"><div style="font-size:36px;margin-bottom:8px">📦</div><div style="font-weight:700;font-size:16px;margin-bottom:6px">No Batches Yet</div><div style="font-size:13px;color:#546E7A;margin-bottom:16px">Create a batch for each cycle — separate records for each</div><button class="btn btn-primary" onclick="openNewBatch()">+ Create First Batch</button></div>`;return;}
   const active=batches.filter(b=>b.status!=='closed'),closed=batches.filter(b=>b.status==='closed');
   const allStats=batches.map(b=>getBatchStats(b.id));
-  const gPL=allStats.reduce((s,x)=>s+x.netPL,0),gP=allStats.reduce((s,x)=>s+x.totalPurchase,0),gE=allStats.reduce((s,x)=>s+x.totalExpense,0);
+  const gPL=allStats.reduce((s,x)=>s+x.netPL,0),gP=allStats.reduce((s,x)=>s+x.totalPurchase,0),gE=allStats.reduce((s,x)=>s+x.totalExpense,0),gW=allStats.reduce((s,x)=>s+x.totalWeight,0);
   const bCard=b=>{const s=getBatchStats(b.id);const isClosed=b.status==='closed';const pc=s.list.length>0?Math.round(s.soldCount/s.list.length*100):0;const aRows=s.list.length?s.list.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #E0E7EF;font-size:13px"><div><span style="font-weight:600">${a.name}</span><span class="badge ${a.sold?'badge-sold':'badge-active'}" style="margin-left:6px;font-size:10px">${a.sold?'Sold':'Active'}</span>${a.batchHistory?.length?'<span style="font-size:10px;color:#546E7A;margin-left:4px">↩ carried over</span>':''}</div><div style="text-align:right"><div style="font-weight:700">${a.sold?`<span class="${(a.salePrice-getTotalCost(a))>=0?'profit-pos':'profit-neg'}">${(a.salePrice-getTotalCost(a))>=0?'+':''}${fmt(a.salePrice-getTotalCost(a))}</span>`:fmt(getTotalCost(a))}</div>${!isClosed&&!a.sold?`<button class="btn-ghost" style="font-size:11px;padding:2px 6px;margin-top:2px" onclick="openCarryForward('${a.id}')">→ Move</button>`:''}</div></div>`).join(''):'<div style="font-size:13px;color:#546E7A;padding:8px 0">No animals</div>';
   return`<div class="card" style="margin-bottom:10px${isClosed?';opacity:0.85':''}"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-size:16px;font-weight:700">${b.name}</div><div style="font-size:12px;color:#546E7A">${b.startDate||'—'}${b.closedAt?' → '+b.closedAt:''} • ${s.list.length} animals</div></div><span class="badge" style="background:${isClosed?'#ECEFF1':s.activeCount>0?'linear-gradient(135deg,#E8F5E9,#C8E6C9)':'linear-gradient(135deg,#E3F2FD,#BBDEFB)'};color:${isClosed?'#455A64':s.activeCount>0?'#1B5E20':'#0D47A1'}">${isClosed?'Closed':s.activeCount>0?'Active':'All Sold'}</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px"><div style="background:#FFF8E1;border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#E65100">Purchase</div><div style="font-size:14px;font-weight:700;margin-top:2px">${fmtShort(s.totalPurchase)}</div></div><div style="background:#FFEBEE;border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#C62828">Expense</div><div style="font-size:14px;font-weight:700;margin-top:2px;color:#E65100">${fmtShort(s.totalExpense)}</div></div><div style="background:${s.netPL>=0?'#E8F5E9':'#FFEBEE'};border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:${s.netPL>=0?'#2E7D32':'#C62828'}">Net P/L</div><div style="font-size:14px;font-weight:700;margin-top:2px;color:${s.netPL>=0?'#0F6E56':'#C62828'}">${s.netPL>=0?'+':''}${fmtShort(s.netPL)}</div></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px"><div style="background:#FFF8E1;border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#E65100">Purchase</div><div style="font-size:14px;font-weight:700;margin-top:2px">${fmtShort(s.totalPurchase)}</div></div><div style="background:#FFEBEE;border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#C62828">Expense</div><div style="font-size:14px;font-weight:700;margin-top:2px;color:#E65100">${fmtShort(s.totalExpense)}</div></div><div style="background:${s.netPL>=0?'#E8F5E9':'#FFEBEE'};border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:${s.netPL>=0?'#2E7D32':'#C62828'}">Net P/L</div><div style="font-size:14px;font-weight:700;margin-top:2px;color:${s.netPL>=0?'#0F6E56':'#C62828'}">${s.netPL>=0?'+':''}${fmtShort(s.netPL)}</div></div><div style="background:#E3F2FD;border-radius:8px;padding:8px;text-align:center"><div style="font-size:10px;color:#1565C0">⚖️ Total Weight (Active)</div><div style="font-size:14px;font-weight:700;margin-top:2px;color:#0D47A1">${s.totalWeight>0?s.totalWeight.toFixed(0)+' kg':'—'}</div>${s.weighedCount<s.activeCount?`<div style="font-size:9px;color:#546E7A;margin-top:1px">${s.weighedCount}/${s.activeCount} weighed</div>`:''}</div></div>
     ${s.list.length?`<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11px;color:#546E7A;margin-bottom:4px"><span>${s.soldCount} sold / ${s.activeCount} active</span><span>${pc}% complete</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pc}%;background:#1D9E75"></div></div></div>`:''}
     <div style="border-top:1px solid #E0E7EF;padding-top:8px"><div style="font-size:11px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px">Animals</div>${aRows}</div>
     <div style="display:flex;gap:6px;margin-top:10px">${!isClosed?`<button class="btn btn-sm btn-danger" onclick="closeBatch('${b.id}')">Close Batch</button>`:`<button class="btn btn-sm" onclick="reopenBatch('${b.id}')">Reopen</button>`}<button class="btn btn-sm btn-danger" onclick="deleteBatch('${b.id}')">🗑 Delete Batch</button></div></div>`;};
   el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><div style="font-size:16px;font-weight:700">Batches</div><div style="font-size:12px;color:#546E7A">${active.length} active • ${closed.length} closed</div></div><button class="btn btn-primary btn-sm" onclick="openNewBatch()">+ New Batch</button></div>
-  <div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,#E8F5E9,#fff);border-left:4px solid #1D9E75"><div style="font-size:12px;font-weight:700;color:#0F6E56;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Overall — All Batches</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><div style="text-align:center"><div style="font-size:10px;color:#546E7A">Total Purchase</div><div style="font-size:15px;font-weight:700;color:#E65100">${fmtShort(gP)}</div></div><div style="text-align:center"><div style="font-size:10px;color:#546E7A">Total Expense</div><div style="font-size:15px;font-weight:700;color:#C62828">${fmtShort(gE)}</div></div><div style="text-align:center"><div style="font-size:10px;color:#546E7A">Net Profit/Loss</div><div style="font-size:15px;font-weight:700;color:${gPL>=0?'#0F6E56':'#C62828'}">${gPL>=0?'+':''}${fmtShort(gPL)}</div></div></div></div>
+  <div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,#E8F5E9,#fff);border-left:4px solid #1D9E75"><div style="font-size:12px;font-weight:700;color:#0F6E56;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em">Overall — All Batches</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="text-align:center"><div style="font-size:10px;color:#546E7A">Total Purchase</div><div style="font-size:15px;font-weight:700;color:#E65100">${fmtShort(gP)}</div></div><div style="text-align:center"><div style="font-size:10px;color:#546E7A">Total Expense</div><div style="font-size:15px;font-weight:700;color:#C62828">${fmtShort(gE)}</div></div><div style="text-align:center"><div style="font-size:10px;color:#546E7A">Net Profit/Loss</div><div style="font-size:15px;font-weight:700;color:${gPL>=0?'#0F6E56':'#C62828'}">${gPL>=0?'+':''}${fmtShort(gPL)}</div></div><div style="text-align:center"><div style="font-size:10px;color:#546E7A">⚖️ Total Weight (Active)</div><div style="font-size:15px;font-weight:700;color:#0D47A1">${gW>0?gW.toFixed(0)+' kg':'—'}</div></div></div></div>
   ${active.length?`<div style="font-size:12px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Active Batches</div>${active.map(bCard).join('')}`:''}
   ${closed.length?`<div style="font-size:12px;font-weight:700;color:#546E7A;text-transform:uppercase;letter-spacing:0.05em;margin:12px 0 8px">Closed Batches</div>${closed.map(bCard).join('')}`:''}`;
 }
@@ -1442,7 +1477,7 @@ function renderReport(){
   const farmByType={};farmExpenses.forEach(e=>{farmByType[e.type]=(farmByType[e.type]||0)+e.amount;});
   const farmMe=Math.max(...Object.values(farmByType),1);
   const farmBars=Object.entries(farmByType).sort((a,b)=>b[1]-a[1]).map(([t,v])=>`<div class="progress-wrap"><div class="progress-info"><span>${t}</span><span style="font-weight:700">${fmt(v)} <span style="color:#546E7A;font-weight:400">(${Math.round(v/farmTotal*100)}%)</span></span></div><div class="progress-bar"><div class="progress-fill" style="width:${Math.round(v/farmMe*100)}%;background:#7E57C2"></div></div></div>`).join('');
-  const soldRows=[...sold].sort((a,b)=>getProfit(b)-getProfit(a)).map(a=>{const p=getProfit(a),c=getTotalCost(a),g=getTotalGain(a),r=getGrowthRate(a);return`<div class="report-stat"><span>${a.name} <span style="font-size:11px;color:#90A4AE">(${a.saleDate||'no date'})</span>${g!==null?` <span style="font-size:12px;color:#546E7A">(${g>=0?'+':''}${g.toFixed(1)}kg${r!==null?', '+(r*30).toFixed(1)+'kg/mo':''})</span>`:''}</span><span><strong class="${p>=0?'profit-pos':'profit-neg'}">${(p>=0?'+':'')+fmt(p)}</strong> <span style="color:#546E7A;font-size:12px">(${Math.round(p/c*100)}% ROI)</span></span></div>`;}).join('');
+  const soldRows=[...sold].sort((a,b)=>getProfit(b)-getProfit(a)).map(a=>{const p=getProfit(a),c=getTotalCost(a),g=getTotalGain(a),r=getGrowthRate(a);return`<div class="report-stat"><span>${a.name} <span style="font-size:11px;color:#90A4AE">(${a.saleDate||'no date'})</span>${g!==null?` <span style="font-size:12px;color:#546E7A">(${g>=0?'+':''}${g.toFixed(1)}kg${r!==null?', '+(r*30).toFixed(1)+'kg/mo, '+r.toFixed(2)+'kg/day':''})</span>`:''}</span><span><strong class="${p>=0?'profit-pos':'profit-neg'}">${(p>=0?'+':'')+fmt(p)}</strong> <span style="color:#546E7A;font-size:12px">(${Math.round(p/c*100)}% ROI)</span></span></div>`;}).join('');
   const activeRows=active.map(a=>`<div class="report-stat"><span>${a.name} <span style="color:#546E7A;font-size:12px">(${daysAgo(a.purchaseDate)||0} days)</span></span><span style="font-weight:700">${fmt(getTotalCost(a))}</span></div>`).join('');
 
   // ── DATE-WISE SOLD FILTER ──
@@ -1520,21 +1555,21 @@ function backupData(){
   const backup = {
     version: 1,
     exportedAt: new Date().toISOString(),
-    farmName: 'Mewat Cattle Tracker',
+    farmName: 'Mewat Cattle Farm',
     animals,
     batches,
     farmExpenses,
     investmentLedger
   };
   const json = JSON.stringify(backup, null, 2);
-  const fileName = 'MewatCattle_Backup_' + td() + '.json';
+  const fileName = 'Mewat_Cattle_Farm_Backup_' + td() + '.json';
 
   // iOS Safari: use Web Share API (works offline, opens native share sheet)
   // This lets user save to Files app, WhatsApp, Notes etc.
   if(navigator.share && /iPhone|iPad|iPod/i.test(navigator.userAgent)){
     const file = new File([json], fileName, {type:'application/json'});
     navigator.share({
-      title: 'Mewat Cattle Backup',
+      title: 'Mewat Cattle Farm Backup',
       text: 'Cattle tracker backup — ' + td(),
       files: [file]
     }).then(()=>toast('✓ Backup shared!')).catch(()=>{
@@ -1617,7 +1652,7 @@ function csvEscape(val){
 
 function downloadReportCSV(){
   const rows=[];
-  rows.push(['Mewat Cattle Tracker — Full Report']);
+  rows.push(['Mewat Cattle Farm — Full Report']);
   rows.push(['Generated on', new Date().toLocaleString()]);
   rows.push([]);
 
@@ -1686,7 +1721,7 @@ function downloadReportCSV(){
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'Mewat_Cattle_Report_'+td()+'.csv';
+  link.download = 'Mewat_Cattle_Farm_Report_'+td()+'.csv';
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
