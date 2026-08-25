@@ -121,7 +121,7 @@ body.tone-report{background:linear-gradient(180deg,#E9F3EF 0%,#ABC4B7 220px)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .report-stat{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E0E7EF;font-size:14px}
 .report-stat:last-child{border-bottom:none}
-.wt-chart{display:flex;align-items:flex-end;gap:4px;height:80px;padding:4px 0;margin:8px 0}
+.wt-chart{display:flex;align-items:flex-end;gap:4px;height:116px;padding:4px 0;margin:16px 0 8px}
 .wt-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
 .wt-bar{width:100%;border-radius:4px 4px 0 0;min-height:4px}
 .wt-bar-label{font-size:9px;color:#546E7A;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
@@ -472,10 +472,15 @@ function getProfit(a){ return a.sold?a.salePrice-getTotalCost(a):null; }
 function daysAgo(d){ return d?Math.floor((Date.now()-new Date(d))/864e5):null; }
 function td(){ return new Date().toISOString().split('T')[0]; }
 function getWLog(a){ return [...(a.weightLog||[])].sort((x,y)=>new Date(x.date)-new Date(y.date)); }
-function getLastW(a){ const l=getWLog(a); return l.length?l[l.length-1]:null; }
-function getTotalGain(a){ const l=getWLog(a); return l.length>=2?l[l.length-1].weight-l[0].weight:null; }
-function getGrowthRate(a){ const l=getWLog(a); if(l.length<2)return null; const d=Math.max(1,(new Date(l[l.length-1].date)-new Date(l[0].date))/864e5); return(l[l.length-1].weight-l[0].weight)/d; }
 function getFarmW(a){ const l=getWLog(a); return l.find(w=>w.stage==='farm')||null; }
+// Growth/gain should be measured from farm arrival onward when that entry exists —
+// the drop from mandi weight to farm weight is transport shrinkage, not fattening
+// growth, and mixing it in (especially when both are logged the same day) produces
+// wildly wrong rates like "-750 kg/month".
+function getGrowthLog(a){ const l=getWLog(a); const i=l.findIndex(w=>w.stage==='farm'); return i>=0?l.slice(i):l; }
+function getTotalGain(a){ const l=getGrowthLog(a); return l.length>=2?l[l.length-1].weight-l[0].weight:null; }
+function getGrowthRate(a){ const l=getGrowthLog(a); if(l.length<2)return null; const d=Math.max(1,(new Date(l[l.length-1].date)-new Date(l[0].date))/864e5); return(l[l.length-1].weight-l[0].weight)/d; }
+function getLastW(a){ const l=getWLog(a); return l.length?l[l.length-1]:null; }
 function growthBadge(r){
   if(r===null) return '';
   const daily_g = r * 1000; // convert kg/day to grams/day
@@ -589,7 +594,7 @@ function openWeight(id){
   const suggestFarm=wlog.length===1&&!getFarmW(a);
   document.getElementById('wStage').value=suggestFarm?'farm':'';
   if(suggestFarm)document.getElementById('wNote').value='Weight at Farm';
-  document.getElementById('weightPrevInfo').innerHTML=(lw?`<div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Last weight</span><span><strong>${lw.weight} kg</strong></span></div><div class="summary-row"><span style="color:#546E7A">Date</span><span>${lw.date||'—'}</span></div></div>${suggestFarm?`<div style="background:#FFF8E1;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#E65100;margin-top:8px">🚚 Ye mandi ke baad ka pehla weight lagta hai — "Weight at Farm" select kar diya gaya hai.</div>`:''}`:`<div style="background:#E3F2FD;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#1565C0">This will be the base weight.</div>`);
+  document.getElementById('weightPrevInfo').innerHTML=(lw?`<div class="summary-box"><div class="summary-row"><span style="color:#546E7A">Last weight</span><span><strong>${lw.weight} kg</strong></span></div><div class="summary-row"><span style="color:#546E7A">Date</span><span>${lw.date||'—'}</span></div></div>${suggestFarm?`<div style="background:#FFF8E1;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#E65100;margin-top:8px">🚚 This looks like the first weight after leaving the mandi — "Weight at Farm" has been auto-selected.</div>`:''}`:`<div style="background:#E3F2FD;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#1565C0">This will be the base weight.</div>`);
   openSheet('weightSheet'); setTimeout(()=>document.getElementById('wWeight').focus(),300);
 }
 function updateWeightPreview(){
@@ -998,8 +1003,13 @@ function proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,tota
   const totalAnimalDays = animalDays.reduce((s,x)=>s+x.days,0);
   if(totalAnimalDays<=0){showAlert('No animals were present during this period.');return;}
 
-  // If editing an existing shared expense, first strip its old entries from every animal
+  // If editing an existing shared expense, capture its original creation time (so
+  // re-saving keeps its place in the list instead of jumping to the top), then
+  // strip its old entries from every animal before rebuilding them.
+  let createdAt = Date.now();
   if(editingSharedBatchId){
+    const existing = animals.flatMap(a=>a.expenses||[]).find(e=>e.batchId===editingSharedBatchId);
+    if(existing && existing.createdAt) createdAt = existing.createdAt;
     animals.forEach(a=>{ if(a.expenses) a.expenses = a.expenses.filter(e=>e.batchId!==editingSharedBatchId); });
   }
 
@@ -1025,7 +1035,7 @@ function proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,tota
     if(!a.expenses)a.expenses=[];
     a.expenses.push({
       id:gId(), batchId:bId, type, amount:share,
-      date:endDate,
+      date:endDate, createdAt,
       desc:(desc?desc+' — ':'')+`Shared (${days}d of ${totalPeriodDays}d period, ${fmt(total)} total${useDailyRate?`, Rs.${dailyRate}/day rate`:''})`,
       isShared:true, totalShared:total, sharedCount:appliedCount+1,
       periodStart:startDate, periodEnd:endDate, daysPresent:days
@@ -1041,8 +1051,8 @@ function proceedSaveCollectiveExpense(total,startDate,endDate,sel,type,desc,tota
 // ── INVESTMENT LEDGER ─────────────────────────────────────────────────────
 let _invType = 'fresh';
 const _invTypeDesc = {
-  fresh: '💵 Fresh Capital — apni jeb se naya paisa jo farm mein lagaya',
-  reinvest: '🔄 Reinvested Profit — janwar bechne ka munafa jo dobara farm mein lagaya'
+  fresh: '💵 Fresh Capital — new money from your own pocket invested into the farm',
+  reinvest: '🔄 Reinvested Profit — profit from selling an animal, reinvested back into the farm'
 };
 function setInvType(t){
   _invType=t;
@@ -1073,8 +1083,8 @@ let _invEditId=null;
 function saveInvestmentEntry(){
   const amount=parseFloat(document.getElementById('invAmount').value)||0;
   const date=document.getElementById('invDate').value;
-  if(!amount){showAlert('Amount daalo.');return;}
-  if(!date){showAlert('Date select karo.');return;}
+  if(!amount){showAlert('Enter amount.');return;}
+  if(!date){showAlert('Select date.');return;}
   const entry={
     id:_invEditId||gId(), type:_invType, amount, date,
     note:document.getElementById('invNote').value,
@@ -1132,7 +1142,7 @@ function renderInvestmentSection(){
         <div style="font-size:11px;color:#546E7A">${reinvest.length} entries</div>
       </div>
     </div>
-    ${allEntries.length ? allEntries.map(entryRow).join('') : '<div style="color:#546E7A;font-size:13px;padding:10px 0;text-align:center">Koi entry nahi — "+ Add Entry" se shuru karo</div>'}
+    ${allEntries.length ? allEntries.map(entryRow).join('') : '<div style="color:#546E7A;font-size:13px;padding:10px 0;text-align:center">No entries yet — tap "+ Add Entry" to get started</div>'}
   </div>`;
 }
 
@@ -1288,7 +1298,7 @@ function renderDetail(id){
   const wlog=getWLog(a),lw=getLastW(a),gain=getTotalGain(a),rate=getGrowthRate(a),farmW=getFarmW(a);
 
   let chartHTML='';
-  if(wlog.length>=2){const maxW=Math.max(...wlog.map(w=>w.weight)),minW=Math.min(...wlog.map(w=>w.weight)),range=(maxW-minW)||1; chartHTML=`<div class="wt-chart">${wlog.map(w=>{const h=Math.round(18+((w.weight-minW)/range)*58);const mo=w.date?w.date.slice(5,7)+'/'+w.date.slice(2,4):'';return`<div class="wt-bar-wrap"><div class="wt-bar" style="height:${h}px;background:#1D9E75"></div><div class="wt-bar-label">${w.weight}</div><div class="wt-bar-label" style="color:#90A4AE">${mo}</div></div>`;}).join('')}</div>`;}
+  if(wlog.length>=2){const maxW=Math.max(...wlog.map(w=>w.weight)),minW=Math.min(...wlog.map(w=>w.weight)),range=(maxW-minW)||1; chartHTML=`<div class="wt-chart">${wlog.map(w=>{const h=Math.round(18+((w.weight-minW)/range)*58);const mo=w.date?w.date.slice(5,7)+'/'+w.date.slice(8,10):'';return`<div class="wt-bar-wrap"><div class="wt-bar" style="height:${h}px;background:#1D9E75"></div><div class="wt-bar-label">${w.weight}</div><div class="wt-bar-label" style="color:#90A4AE">${mo}</div></div>`;}).join('')}</div>`;}
 
   const wRows=wlog.length===0?'<div style="color:#546E7A;font-size:14px;padding:10px 0">No weight recorded.</div>':wlog.map((w,i)=>{const prev=i>0?wlog[i-1]:null,diff=prev?w.weight-prev.weight:null,db=prev?Math.round((new Date(w.date)-new Date(prev.date))/864e5):null;const dotColor=w.stage==='farm'?'#E65100':(i===0?'#1565C0':diff>0?'#1D9E75':diff<0?'#C62828':'#90A4AE');const labelText=w.stage==='farm'?'🚚 Weight at Farm':(w.note||'');return`<div class="weight-row"><div class="weight-dot" style="background:${dotColor}"></div><div class="weight-val">${w.weight} kg</div><div class="weight-date">${w.date||'—'}${labelText?' • '+labelText:''}${db?' <span style="color:#90A4AE">('+db+'d'+((diff!==null)?', '+(diff/db).toFixed(2)+' kg/day':'')+')</span>':''}</div>${diff!==null?`<div class="weight-gain ${diff>=0?'pos':'neg'}">${diff>=0?'+':''}${diff.toFixed(1)}kg</div>`:'<div class="weight-gain" style="color:#90A4AE">Base</div>'}<button class="btn-ghost" onclick="event.stopPropagation();editWeight('${a.id}','${w.id}')" style="margin-left:4px">✏️</button><button class="btn-icon btn-danger" onclick="event.stopPropagation();deleteWeight('${a.id}','${w.id}')" style="margin-left:2px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></div>`;}).join('');
 
@@ -1297,7 +1307,7 @@ function renderDetail(id){
   document.getElementById('detailContent').innerHTML=`
     <div class="card" style="border-left:4px solid #42A5F5;background:linear-gradient(135deg,#E3F2FD 0%,#fff 60%)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div class="card-title" style="margin-bottom:0;color:#0D47A1">⚖️ Weight Track (${wlog.length} entries)</div>${!a.sold?`<button class="btn btn-sm btn-primary" onclick="openWeight('${a.id}')">+ Weight</button>`:''}</div>
-      ${lw?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px"><div style="background:#E3F2FD;border-radius:8px;padding:10px;text-align:center;border:1px solid #BBDEFB"><div style="font-size:11px;color:#1565C0">Latest Weight</div><div style="font-size:20px;font-weight:700;margin-top:2px">${lw.weight}<span style="font-size:12px;font-weight:400"> kg</span></div></div><div style="background:#E8F5E9;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8E6C9"><div style="font-size:11px;color:#2E7D32">Total Gain</div><div style="font-size:20px;font-weight:700;margin-top:2px;color:${(gain||0)>=0?'#0F6E56':'#C62828'}">${gain!==null?(gain>=0?'+':'')+gain.toFixed(1):'—'}<span style="font-size:12px;font-weight:400"> kg</span></div></div><div style="background:#EDE7F6;border-radius:8px;padding:10px;text-align:center;border:1px solid #D1C4E9"><div style="font-size:11px;color:#4527A0">Growth/Month</div><div style="font-size:18px;font-weight:700;margin-top:2px;color:#4527A0">${rate!==null?(rate*30).toFixed(1):'—'}<span style="font-size:12px;font-weight:400"> kg</span></div><div style="font-size:11px;color:#546E7A;margin-top:1px">${rate!==null?rate.toFixed(2)+' kg/day':''}</div>${rate!==null?`<div style="margin-top:4px">${growthBadge(rate)}</div>`:''}</div></div>${farmW?`<div style="display:flex;justify-content:space-between;align-items:center;background:#FFF8E1;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:13px;color:#E65100"><span>🚚 Weight at Farm</span><span style="font-weight:700">${farmW.weight} kg <span style="font-weight:400;color:#546E7A">(${farmW.date||'—'})</span></span></div>`:''}${chartHTML}`:''}
+      ${lw?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px"><div style="background:#E3F2FD;border-radius:8px;padding:10px;text-align:center;border:1px solid #BBDEFB"><div style="font-size:11px;color:#1565C0">Latest Weight</div><div style="font-size:20px;font-weight:700;margin-top:2px">${lw.weight}<span style="font-size:12px;font-weight:400"> kg</span></div></div><div style="background:#E8F5E9;border-radius:8px;padding:10px;text-align:center;border:1px solid #C8E6C9"><div style="font-size:11px;color:#2E7D32">Gain${farmW?' (Farm→Now)':''}</div><div style="font-size:20px;font-weight:700;margin-top:2px;color:${(gain||0)>=0?'#0F6E56':'#C62828'}">${gain!==null?(gain>=0?'+':'')+gain.toFixed(1):'—'}<span style="font-size:12px;font-weight:400"> kg</span></div></div><div style="background:#EDE7F6;border-radius:8px;padding:10px;text-align:center;border:1px solid #D1C4E9"><div style="font-size:11px;color:#4527A0">Growth/Month</div><div style="font-size:18px;font-weight:700;margin-top:2px;color:#4527A0">${rate!==null?(rate*30).toFixed(1):'—'}<span style="font-size:12px;font-weight:400"> kg</span></div><div style="font-size:11px;color:#546E7A;margin-top:1px">${rate!==null?rate.toFixed(2)+' kg/day':''}</div>${rate!==null?`<div style="margin-top:4px">${growthBadge(rate)}</div>`:''}</div></div>${farmW?`<div style="display:flex;justify-content:space-between;align-items:center;background:#FFF8E1;border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:13px;color:#E65100"><span>🚚 Weight at Farm</span><span style="font-weight:700">${farmW.weight} kg <span style="font-weight:400;color:#546E7A">(${farmW.date||'—'})</span></span></div><div style="font-size:11px;color:#546E7A;margin-bottom:12px">ℹ️ Gain/Growth is now calculated from "Weight at Farm" — the transport loss from mandi to farm (${(wlog[0].weight-farmW.weight).toFixed(1)} kg) is not included.</div>`:''}${chartHTML}`:''}
       ${wRows}
       ${!a.sold&&wlog.length===0?`<button class="btn btn-primary btn-full" style="margin-top:10px" onclick="openWeight('${a.id}')">⚖️ Record First Weight</button>`:''}
     </div>
@@ -1360,7 +1370,7 @@ function renderBatches(){
 function renderCollective(){
   const el=document.getElementById('collectiveContent');
   const allShared=animals.flatMap(a=>(a.expenses||[]).filter(e=>e.isShared));
-  const unique=[...new Map(allShared.map(e=>[e.batchId,e])).values()].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const unique=[...new Map(allShared.map(e=>[e.batchId,e])).values()].sort((a,b)=>(b.createdAt||new Date(b.date).getTime())-(a.createdAt||new Date(a.date).getTime()));
   const total=unique.reduce((s,e)=>s+e.totalShared,0);
   const farmTotal=farmExpenses.reduce((s,e)=>s+e.amount,0);
 
